@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 use std::io;
 use serde::{ser, Serialize};
-use serde::ser::StdError;
+use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
 
 pub struct Error {
 
@@ -29,6 +29,105 @@ impl serde::ser::Error for Error {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+pub struct SerializeResult {
+
+}
+
+impl SerializeSeq for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
+impl SerializeTuple for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
+impl SerializeTupleStruct for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
+impl SerializeTupleVariant for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
+impl SerializeMap for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
+impl SerializeStruct for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
+impl SerializeStructVariant for SerializeResult {
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+        todo!()
+    }
+
+    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+}
+
 pub struct Serializer<W> {
     writer: W
 }
@@ -50,13 +149,13 @@ where
 {
     type Ok = ();
     type Error = Error;
-    type SerializeSeq = ();
-    type SerializeTuple = ();
-    type SerializeTupleStruct = ();
-    type SerializeTupleVariant = ();
-    type SerializeMap = ();
-    type SerializeStruct = ();
-    type SerializeStructVariant = ();
+    type SerializeSeq = SerializeResult;
+    type SerializeTuple = SerializeResult;
+    type SerializeTupleStruct = SerializeResult;
+    type SerializeTupleVariant = SerializeResult;
+    type SerializeMap = SerializeResult;
+    type SerializeStruct = SerializeResult;
+    type SerializeStructVariant = SerializeResult;
 
     fn serialize_bool(self, v: bool) -> std::result::Result<Self::Ok, Self::Error> {
         todo!()
