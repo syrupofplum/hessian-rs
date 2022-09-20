@@ -271,7 +271,16 @@ where
 }
 
 pub struct Formatter {
+}
 
+impl Formatter {
+    pub fn format_bool(v: bool, buf: &[u8]) -> std::result::Result<(), Error> {
+        match v {
+            true => {},
+            false => {},
+        }
+        Ok(())
+    }
 }
 
 fn main() {
