@@ -2,6 +2,7 @@ use std::fmt::{Debug, Display};
 use std::io;
 use serde::{ser, Serialize};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
+use bytes::{BytesMut, BufMut};
 
 pub struct Error {
 
@@ -274,7 +275,7 @@ pub struct Formatter {
 }
 
 impl Formatter {
-    pub fn format_bool(v: bool, buf: &[u8]) -> std::result::Result<(), Error> {
+    pub fn format_bool(v: bool, buf: &mut BytesMut) -> std::result::Result<(), Error> {
         match v {
             true => {},
             false => {},
