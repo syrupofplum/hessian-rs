@@ -40,11 +40,11 @@ impl SerializeSeq for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -53,11 +53,11 @@ impl SerializeTuple for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -66,11 +66,11 @@ impl SerializeTupleStruct for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -79,11 +79,11 @@ impl SerializeTupleVariant for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -92,15 +92,15 @@ impl SerializeMap for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -109,11 +109,11 @@ impl SerializeStruct for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -122,11 +122,11 @@ impl SerializeStructVariant for SerializeResult {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> std::result::Result<(), Self::Error> where T: Serialize {
+    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok> where T: Serialize {
         todo!()
     }
 
-    fn end(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn end(self) -> Result<Self::Ok> {
         todo!()
     }
 }
@@ -309,5 +309,8 @@ impl Formatter {
 }
 
 fn main() {
-
+    use hessian_rs;
+    let mut stdout = std::io::stdout();
+    let mut ser: hessian_rs::ser::Serializer<std::io::Stdout> = hessian_rs::ser::Serializer::new(&mut stdout);
+    ser.serialize_value(&hessian_rs::Value::Bool(true));
 }
