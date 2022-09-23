@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Display};
 use std::io;
+use std::io::Write;
 use std::ops::Deref;
 use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
@@ -132,22 +133,22 @@ impl SerializeStructVariant for SerializeResult {
     }
 }
 
-pub struct Serializer<W> {
-    writer: W
+pub struct Serializer<'a, W> {
+    writer: &'a mut W
 }
 
-impl <W> Serializer<W>
+impl <'a, W> Serializer<'a, W>
 where
     W: io::Write,
 {
-    pub fn new(writer: W) -> Self {
+    pub fn new(writer: &'a mut W) -> Self {
         Serializer {
             writer
         }
     }
 }
 
-impl <'a, W> ser::Serializer for &'a mut Serializer<W>
+impl <'a, W> ser::Serializer for &'a mut Serializer<'a, W>
 where
     W: io::Write
 {
@@ -325,8 +326,9 @@ impl BytesBufWriter {
         }
     }
 
-    fn get(&self) {
-
+    fn get(&self) -> Bytes {
+        println!("{:?}", self.bytes_result);
+        self.bytes_result.clone().unwrap()
     }
 }
 
@@ -349,8 +351,12 @@ fn main() {
     let mut other_buf = BytesBufWriter::new();
     let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
     other_ser.serialize_value(&hessian_rs::Value::Bool(true));
+    other_buf.flush();
 
     let mut buf = BytesBufWriter::new();
-    let mut ser = Serializer::new(buf);
+    let mut ser = Serializer::new(&mut buf);
     ser.serialize_bool(true);
+    buf.flush();
+
+    assert_eq!(other_buf.get(), buf.get());
 }
