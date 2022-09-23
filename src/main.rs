@@ -1,8 +1,9 @@
 use std::fmt::{Debug, Display};
 use std::io;
-use serde::{ser, Serialize};
+use std::ops::Deref;
+use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
-use bytes::{BytesMut, BufMut};
+use bytes::{BytesMut, BufMut, Bytes};
 
 type BytesBuf = BytesMut;
 
@@ -146,7 +147,7 @@ where
     }
 }
 
-impl <W> ser::Serializer for Serializer<W>
+impl <'a, W> ser::Serializer for &'a mut Serializer<W>
 where
     W: io::Write
 {
@@ -161,7 +162,10 @@ where
     type SerializeStructVariant = SerializeResult;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(1);
+        Formatter::format_bool(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok> {
@@ -286,10 +290,10 @@ impl Formatter {
     }
 
     pub fn format_i8(v: i8, buf: &mut BytesBuf) -> Result<()> {
-        Formatter::format_i32(v.into(), buf)
+        Formatter::format_i64(v.into(), buf)
     }
 
-    pub fn format_i32(v: i32, buf: &mut BytesBuf) -> Result<()> {
+    pub fn format_i64(v: i64, buf: &mut BytesBuf) -> Result<()> {
         match v {
             -16..=47 => {
                 buf.put_i8((v + 0x90) as i8);
@@ -308,9 +312,45 @@ impl Formatter {
     }
 }
 
+struct BytesBufWriter {
+    bytes_buf: BytesBuf,
+    bytes_result: Option<Bytes>
+}
+
+impl BytesBufWriter {
+    fn new() -> Self {
+        BytesBufWriter {
+            bytes_buf: BytesBuf::new(),
+            bytes_result: None,
+        }
+    }
+
+    fn get(&self) {
+
+    }
+}
+
+impl io::Write for BytesBufWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.bytes_buf.put(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let bytes_buf = self.bytes_buf.clone();
+        let bytes = bytes_buf.freeze();
+        self.bytes_result = Some(bytes);
+        Ok(())
+    }
+}
+
 fn main() {
     use hessian_rs;
-    let mut stdout = std::io::stdout();
-    let mut ser: hessian_rs::ser::Serializer<std::io::Stdout> = hessian_rs::ser::Serializer::new(&mut stdout);
-    ser.serialize_value(&hessian_rs::Value::Bool(true));
+    let mut other_buf = BytesBufWriter::new();
+    let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
+    other_ser.serialize_value(&hessian_rs::Value::Bool(true));
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(buf);
+    ser.serialize_bool(true);
 }
