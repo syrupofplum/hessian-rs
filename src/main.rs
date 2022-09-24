@@ -170,11 +170,17 @@ where
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(1);
+        Formatter::format_i8(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(1);
+        Formatter::format_i16(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok> {
@@ -281,6 +287,7 @@ where
 pub struct Formatter {
 }
 
+#[allow(arithmetic_overflow)]
 impl Formatter {
     pub fn format_bool(v: bool, buf: &mut BytesBuf) -> Result<()> {
         match v {
@@ -294,16 +301,21 @@ impl Formatter {
         Formatter::format_i64(v.into(), buf)
     }
 
+    pub fn format_i16(v: i16, buf: &mut BytesBuf) -> Result<()> {
+        Formatter::format_i64(v.into(), buf)
+    }
+
     pub fn format_i64(v: i64, buf: &mut BytesBuf) -> Result<()> {
         match v {
             -16..=47 => {
                 buf.put_i8((v + 0x90) as i8);
             },
             -2048..=2047 => {
-
+                buf.put_i8(((v >> 8) & 0xff + 0xc8) as i8);
+                buf.put_i8((v & 0xff) as i8);
             },
             -262144..=262143 => {
-
+                
             },
             _ => {
 
@@ -350,12 +362,18 @@ fn main() {
     use hessian_rs;
     let mut other_buf = BytesBufWriter::new();
     let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-    other_ser.serialize_value(&hessian_rs::Value::Bool(true));
+    // other_ser.serialize_value(&hessian_rs::Value::Bool(true));
+    // other_ser.serialize_value(&hessian_rs::Value::Int(35));
+    other_ser.serialize_value(&hessian_rs::Value::Int(-1837));
     other_buf.flush();
+
+    println!("{:?}", other_buf.get());
 
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
-    ser.serialize_bool(true);
+    // ser.serialize_bool(true);
+    // ser.serialize_i8(35);
+    ser.serialize_i16(-1837);
     buf.flush();
 
     assert_eq!(other_buf.get(), buf.get());
