@@ -191,7 +191,10 @@ where
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(5);
+        Formatter::format_i64(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
