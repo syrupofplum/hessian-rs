@@ -198,7 +198,10 @@ where
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(2);
+        Formatter::format_u8(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
@@ -340,6 +343,14 @@ impl Formatter {
                 buf.put_u8((v & 0xff) as u8);
             },
         };
+        Ok(())
+    }
+
+    pub fn format_u8(v: u8, buf: &mut BytesBuf) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn format_u64(v: u8, buf: &mut BytesBuf) -> Result<()> {
         Ok(())
     }
 }
