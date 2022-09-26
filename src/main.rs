@@ -191,7 +191,7 @@ where
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok> {
-        let mut bytes_buf = BytesBuf::with_capacity(5);
+        let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_i64(v, &mut bytes_buf)?;
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
         Ok(())
@@ -309,18 +309,22 @@ impl Formatter {
     }
 
     pub fn format_i8(v: i8, buf: &mut BytesBuf) -> Result<()> {
-        Formatter::format_i64(v.into(), buf)
+        Self::format_int_signed(v.into(), buf)
     }
 
     pub fn format_i16(v: i16, buf: &mut BytesBuf) -> Result<()> {
-        Formatter::format_i64(v.into(), buf)
+        Self::format_int_signed(v.into(), buf)
     }
 
     pub fn format_i32(v: i32, buf: &mut BytesBuf) -> Result<()> {
-        Formatter::format_i64(v.into(), buf)
+        Self::format_int_signed(v.into(), buf)
     }
 
     pub fn format_i64(v: i64, buf: &mut BytesBuf) -> Result<()> {
+        Self::format_long_signed(v.into(), buf)
+    }
+
+    fn format_int_signed(v: i32, buf: &mut BytesBuf) -> Result<()> {
         match v {
             -16..=47 => {
                 buf.put_u8((v + 0x90) as u8);
@@ -337,6 +341,41 @@ impl Formatter {
             _ => {
                 // I
                 buf.put_u8(0x49);
+                buf.put_u8(((v >> 24) & 0xff) as u8);
+                buf.put_u8(((v >> 16) & 0xff) as u8);
+                buf.put_u8(((v >> 8) & 0xff) as u8);
+                buf.put_u8((v & 0xff) as u8);
+            },
+        };
+        Ok(())
+    }
+
+    fn format_long_signed(v: i64, buf: &mut BytesBuf) -> Result<()> {
+        const I32_MIN: i64 = i32::MIN as i64;
+        const I32_MAX: i64 = i32::MAX as i64;
+        match v {
+            -8..=15 => {
+                buf.put_u8((v + 0xe0) as u8);
+            },
+            -2_048..=2_047 => {
+                buf.put_u8((((v >> 8) & 0xff) + 0xf8) as u8);
+                buf.put_u8((v & 0xff) as u8);
+            },
+            -262_144..=262_143 => {
+                buf.put_u8((((v >> 16) & 0xff) + 0x3c) as u8);
+                buf.put_u8(((v >> 8) & 0xff) as u8);
+                buf.put_u8((v & 0xff) as u8);
+            },
+            I32_MIN..=I32_MAX => {
+                Self::format_int_signed(v as i32, buf)?;
+            },
+            _ => {
+                // L
+                buf.put_u8(0x4c);
+                buf.put_u8(((v >> 56) & 0xff) as u8);
+                buf.put_u8(((v >> 48) & 0xff) as u8);
+                buf.put_u8(((v >> 40) & 0xff) as u8);
+                buf.put_u8(((v >> 32) & 0xff) as u8);
                 buf.put_u8(((v >> 24) & 0xff) as u8);
                 buf.put_u8(((v >> 16) & 0xff) as u8);
                 buf.put_u8(((v >> 8) & 0xff) as u8);
@@ -474,6 +513,23 @@ mod tests {
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_i32(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!(other_buf.get(), buf.get());
+    }
+
+    #[test]
+    fn test_int_8_octet() {
+        const V: i64 = 2983749823759;
+
+        let mut other_buf = BytesBufWriter::new();
+        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
+        other_ser.serialize_value(&hessian_rs::Value::Long(V as i64)).unwrap();
+        other_buf.flush().unwrap();
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
         buf.flush().unwrap();
 
         assert_eq!(other_buf.get(), buf.get());
