@@ -6,6 +6,10 @@ use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
 use bytes::{BytesMut, BufMut, Bytes};
 
+const I32_MIN_I64: i64 = i32::MIN as i64;
+const I32_MAX_I64: i64 = i32::MAX as i64;
+const I32_MAX_U64: u64 = i32::MAX as u64;
+
 type BytesBuf = BytesMut;
 
 pub struct Error {
@@ -296,7 +300,6 @@ where
 pub struct Formatter {
 }
 
-#[allow(arithmetic_overflow)]
 impl Formatter {
     pub fn format_bool(v: bool, buf: &mut BytesBuf) -> Result<()> {
         match v {
@@ -351,8 +354,6 @@ impl Formatter {
     }
 
     fn format_long_signed(v: i64, buf: &mut BytesBuf) -> Result<()> {
-        const I32_MIN: i64 = i32::MIN as i64;
-        const I32_MAX: i64 = i32::MAX as i64;
         match v {
             -8..=15 => {
                 buf.put_u8((v + 0xe0) as u8);
@@ -366,8 +367,13 @@ impl Formatter {
                 buf.put_u8(((v >> 8) & 0xff) as u8);
                 buf.put_u8((v & 0xff) as u8);
             },
-            I32_MIN..=I32_MAX => {
-                Self::format_int_signed(v as i32, buf)?;
+            I32_MIN_I64..=I32_MAX_I64 => {
+                // Y
+                buf.put_u8(0x59);
+                buf.put_u8(((v >> 24) & 0xff) as u8);
+                buf.put_u8(((v >> 16) & 0xff) as u8);
+                buf.put_u8(((v >> 8) & 0xff) as u8);
+                buf.put_u8((v & 0xff) as u8);
             },
             _ => {
                 // L
@@ -386,11 +392,45 @@ impl Formatter {
     }
 
     pub fn format_u8(v: u8, buf: &mut BytesBuf) -> Result<()> {
+        Self::format_int_signed(v.into(), buf)
+    }
+
+    pub fn format_u64(v: u64, buf: &mut BytesBuf) -> Result<()> {
+        if v > I32_MAX_U64 {
+            return Err(Error{});
+        }
+        Self::format_long_signed(v as i64, buf)
+    }
+
+    fn format_double(v: f64, buf: &mut BytesBuf) -> Result<()> {
+        let v_trunc = v.trunc() as i32;
+        if v_trunc as f64 == v {
+            match v_trunc {
+                0 => {
+                    buf.put_u8(0x5b);
+                },
+                1 => {
+                    buf.put_u8(0x5c);
+                },
+                -128..=127 => {
+                    buf.put_u8(0x5d);
+                    buf.put_u8(v_trunc as u8);
+                },
+                -32768..=32767 => {
+                    buf.put_u8(0x5e);
+                    buf.put_u8(((v_trunc >> 8) & 0xff) as u8);
+                    buf.put_u8((v_trunc & 0xff) as u8);
+                }
+                _ => {
+
+                }
+            }
+        }
         Ok(())
     }
 
-    pub fn format_u64(v: u8, buf: &mut BytesBuf) -> Result<()> {
-        Ok(())
+    pub fn format_f64(v: f64, buf: &mut BytesBuf) -> Result<()> {
+        Self::format_double(v.into(), buf)
     }
 }
 
@@ -534,8 +574,14 @@ mod tests {
 
         assert_eq!(other_buf.get(), buf.get());
     }
+
+    #[test]
+    fn test_double_3_octet() {
+
+    }
 }
 
 fn main() {
-
+    let z: i32 = -3;
+    println!("{}", z as u8);
 }
