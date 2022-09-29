@@ -9,6 +9,8 @@ use bytes::{BytesMut, BufMut, Bytes};
 const I32_MIN_I64: i64 = i32::MIN as i64;
 const I32_MAX_I64: i64 = i32::MAX as i64;
 const I32_MAX_U64: u64 = i32::MAX as u64;
+const F32_MIN_F64: f64 = f32::MIN as f64;
+const F32_MAX_F64: f64 = f32::MAX as f64;
 
 type BytesBuf = BytesMut;
 
@@ -221,11 +223,17 @@ where
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(9);
+        Formatter::format_f32(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(9);
+        Formatter::format_f64(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok> {
@@ -344,10 +352,7 @@ impl Formatter {
             _ => {
                 // I
                 buf.put_u8(0x49);
-                buf.put_u8(((v >> 24) & 0xff) as u8);
-                buf.put_u8(((v >> 16) & 0xff) as u8);
-                buf.put_u8(((v >> 8) & 0xff) as u8);
-                buf.put_u8((v & 0xff) as u8);
+                buf.put_i32(v);
             },
         };
         Ok(())
@@ -370,22 +375,12 @@ impl Formatter {
             I32_MIN_I64..=I32_MAX_I64 => {
                 // Y
                 buf.put_u8(0x59);
-                buf.put_u8(((v >> 24) & 0xff) as u8);
-                buf.put_u8(((v >> 16) & 0xff) as u8);
-                buf.put_u8(((v >> 8) & 0xff) as u8);
-                buf.put_u8((v & 0xff) as u8);
+                buf.put_i32(v as i32);
             },
             _ => {
                 // L
                 buf.put_u8(0x4c);
-                buf.put_u8(((v >> 56) & 0xff) as u8);
-                buf.put_u8(((v >> 48) & 0xff) as u8);
-                buf.put_u8(((v >> 40) & 0xff) as u8);
-                buf.put_u8(((v >> 32) & 0xff) as u8);
-                buf.put_u8(((v >> 24) & 0xff) as u8);
-                buf.put_u8(((v >> 16) & 0xff) as u8);
-                buf.put_u8(((v >> 8) & 0xff) as u8);
-                buf.put_u8((v & 0xff) as u8);
+                buf.put_i64(v);
             },
         };
         Ok(())
@@ -404,29 +399,40 @@ impl Formatter {
 
     fn format_double(v: f64, buf: &mut BytesBuf) -> Result<()> {
         let v_trunc = v.trunc() as i32;
+        let mut is_formatted = false;
         if v_trunc as f64 == v {
             match v_trunc {
                 0 => {
                     buf.put_u8(0x5b);
+                    is_formatted = true;
                 },
                 1 => {
                     buf.put_u8(0x5c);
+                    is_formatted = true;
                 },
                 -128..=127 => {
                     buf.put_u8(0x5d);
-                    buf.put_u8(v_trunc as u8);
+                    buf.put_i8(v_trunc as i8);
+                    is_formatted = true;
                 },
-                -32768..=32767 => {
+                -32_768..=32_767 => {
                     buf.put_u8(0x5e);
-                    buf.put_u8(((v_trunc >> 8) & 0xff) as u8);
-                    buf.put_u8((v_trunc & 0xff) as u8);
-                }
-                _ => {
-
-                }
+                    buf.put_i16(v_trunc as i16);
+                    is_formatted = true;
+                },
+                _ => {},
+            }
+        }
+        if !is_formatted {
+            match v {
+                _ => {}
             }
         }
         Ok(())
+    }
+
+    pub fn format_f32(v: f32, buf: &mut BytesBuf) -> Result<()> {
+        Self::format_double(v.into(), buf)
     }
 
     pub fn format_f64(v: f64, buf: &mut BytesBuf) -> Result<()> {
@@ -560,7 +566,7 @@ mod tests {
 
     #[test]
     fn test_int_8_octet() {
-        const V: i64 = 2983749823759;
+        const V: i64 = 298374982523759;
 
         let mut other_buf = BytesBufWriter::new();
         let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
