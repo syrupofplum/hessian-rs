@@ -424,9 +424,9 @@ impl Formatter {
             }
         }
         if !is_formatted {
-            match v {
-                _ => {}
-            }
+            // D
+            buf.put_u8(0x44);
+            buf.put_f64(v);
         }
         Ok(())
     }
@@ -475,6 +475,7 @@ impl io::Write for BytesBufWriter {
 
 mod tests {
     use std::io::Write;
+    use std::ops::Deref;
     use serde::Serializer as OtherSerializer;
     use crate::{BytesBufWriter, Serializer};
     use hessian_rs;
@@ -582,12 +583,25 @@ mod tests {
     }
 
     #[test]
-    fn test_double_3_octet() {
+    fn test_double_8_octet() {
+        const V: f64 = 897398.5747673;
 
+        let mut other_buf = BytesBufWriter::new();
+        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
+        other_ser.serialize_value(&hessian_rs::Value::Double(V as f64)).unwrap();
+        other_buf.flush().unwrap();
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_f64(V).unwrap();
+        buf.flush().unwrap();
+
+        println!("{:?}", buf.get().deref());
+
+        // hessian_rs is wrong
+        assert_eq!(other_buf.get(), buf.get());
     }
 }
 
 fn main() {
-    let z: i32 = -3;
-    println!("{}", z as u8);
 }
