@@ -1,2 +1,2 @@
 # hessian-rs
-A serializer/deserializer for hessian written in Rust
+A serializer/deserializer for hessian2 protocol written in Rust
