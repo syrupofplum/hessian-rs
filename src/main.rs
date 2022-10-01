@@ -477,8 +477,29 @@ mod tests {
     use std::io::Write;
     use std::ops::Deref;
     use serde::Serializer as OtherSerializer;
-    use crate::{BytesBufWriter, Serializer};
+    use crate::{BytesBufWriter, Error, Result, Serializer};
     use hessian_rs;
+    use j4rs::{ClasspathEntry, errors, Instance, InvocationArg, Jvm, JvmBuilder};
+
+    #[test]
+    fn get_jar_result() -> Result<()> {
+        let entry = ClasspathEntry::new("./hessian-java.jar");
+        let jvm = JvmBuilder::new()
+            .classpath_entry(entry)
+            .build()
+            .map_err(|_| Error{})?;
+        let bool_arg = InvocationArg::try_from(true).map_err(|_| Error{})?
+            .into_primitive().map_err(|_| Error{})?;
+        let java_result = jvm.invoke_static(
+            "com.syrupofplum.hessian.Main",
+            "serializeBool",
+            &[bool_arg],
+        ).map_err(|_| Error{})?;
+
+        // todo
+
+        Ok(())
+    }
 
     #[test]
     fn test_bool() {
