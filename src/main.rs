@@ -459,7 +459,7 @@ impl BytesBufWriter {
     }
 }
 
-impl io::Write for BytesBufWriter {
+impl Write for BytesBufWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.bytes_buf.put(buf);
         Ok(buf.len())
@@ -478,139 +478,166 @@ mod tests {
     use std::ops::Deref;
     use serde::Serializer as OtherSerializer;
     use crate::{BytesBufWriter, Error, Result, Serializer};
-    use hessian_rs;
-    use j4rs::{ClasspathEntry, errors, Instance, InvocationArg, Jvm, JvmBuilder};
 
     #[test]
-    fn get_jar_result() -> Result<()> {
-        let entry = ClasspathEntry::new("./hessian-java.jar");
-        let jvm = JvmBuilder::new()
-            .classpath_entry(entry)
-            .build()
-            .map_err(|_| Error{})?;
-        let bool_arg = InvocationArg::try_from(true).map_err(|_| Error{})?
-            .into_primitive().map_err(|_| Error{})?;
-        let java_result = jvm.invoke_static(
-            "com.syrupofplum.hessian.Main",
-            "serializeBool",
-            &[bool_arg],
-        ).map_err(|_| Error{})?;
-
-        // todo
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_bool() {
-        const V: bool = true;
-
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Bool(V)).unwrap();
-        other_buf.flush().unwrap();
+    fn test_bool_false() {
+        const V: bool = false;
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_bool(V).unwrap();
         buf.flush().unwrap();
 
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0x46], buf.get().deref());
     }
 
     #[test]
-    fn test_int_1_octet() {
-        const V: i8 = 35;
+    fn test_bool_true() {
+        const V: bool = true;
 
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Int(V as i32)).unwrap();
-        other_buf.flush().unwrap();
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_bool(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x54], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_1_1() {
+        const V: i8 = 35;
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_i8(V).unwrap();
         buf.flush().unwrap();
 
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0xb3], buf.get().deref());
     }
 
     #[test]
-    fn test_int_2_octet() {
-        const V: i16 = -1837;
+    fn test_int_1_2() {
+        const V: i8 = -11;
 
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Int(V as i32)).unwrap();
-        other_buf.flush().unwrap();
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i8(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x85], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_2_1() {
+        const V: i16 = 117;
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_i16(V).unwrap();
         buf.flush().unwrap();
 
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0xc8,0x75], buf.get().deref());
     }
 
     #[test]
-    fn test_int_3_octet() {
+    fn test_int_2_2() {
+        const V: i16 = 1736;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i16(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xce,0xc8], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_2_3() {
+        const V: i16 = -1837;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i16(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xc0,0xd3], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_3_1() {
         const V: i32 = 136289;
 
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Int(V as i32)).unwrap();
-        other_buf.flush().unwrap();
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i32(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xd6,0x14,0x61], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_3_2() {
+        const V: i32 = -3683;
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_i32(V).unwrap();
         buf.flush().unwrap();
 
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0xd3,0xf1,0x9d], buf.get().deref());
     }
 
     #[test]
-    fn test_int_4_octet() {
+    fn test_int_3_3() {
+        const V: i32 = -87236;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i32(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xd2,0xab,0x3c], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_5_1() {
         const V: i32 = 9087387;
 
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Int(V as i32)).unwrap();
-        other_buf.flush().unwrap();
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i32(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x49,0x0,0x8a,0xa9,0x9b], buf.get().deref());
+    }
+
+    #[test]
+    fn test_int_5_2() {
+        const V: i32 = -7236247;
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_i32(V).unwrap();
         buf.flush().unwrap();
 
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0x49,0xff,0x91,0x95,0x69], buf.get().deref());
     }
 
     #[test]
-    fn test_int_8_octet() {
+    fn test_int_9_1() {
         const V: i64 = 298374982523759;
-
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Long(V as i64)).unwrap();
-        other_buf.flush().unwrap();
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_i64(V).unwrap();
         buf.flush().unwrap();
 
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0x4c,0x0,0x1,0xf,0x5e,0xd6,0xd7,0xdb,0x6f], buf.get().deref());
     }
 
     #[test]
-    fn test_double_8_octet() {
+    fn test_double_9_1() {
         const V: f64 = 897398.5747673;
-
-        let mut other_buf = BytesBufWriter::new();
-        let mut other_ser = hessian_rs::ser::Serializer::new(&mut other_buf);
-        other_ser.serialize_value(&hessian_rs::Value::Double(V as f64)).unwrap();
-        other_buf.flush().unwrap();
 
         let mut buf = BytesBufWriter::new();
         let mut ser = Serializer::new(&mut buf);
@@ -620,7 +647,7 @@ mod tests {
         println!("{:?}", buf.get().deref());
 
         // hessian_rs is wrong
-        assert_eq!(other_buf.get(), buf.get());
+        assert_eq!([0x44,0x41,0x2b,0x62,0xed,0x26,0x47,0xe6,0x49], buf.get().deref());
     }
 }
 
