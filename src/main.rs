@@ -6,6 +6,7 @@ use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
 use bytes::{BytesMut, BufMut, Bytes};
 
+const I32_MAX_U32: u32 = i32::MAX as u32;
 const I32_MIN_I64: i64 = i32::MIN as i64;
 const I32_MAX_I64: i64 = i32::MAX as i64;
 const I32_MAX_U64: u64 = i32::MAX as u64;
@@ -211,15 +212,24 @@ where
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(2);
+        Formatter::format_u16(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(2);
+        Formatter::format_u32(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(2);
+        Formatter::format_u64(v, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok> {
@@ -388,6 +398,18 @@ impl Formatter {
 
     pub fn format_u8(v: u8, buf: &mut BytesBuf) -> Result<()> {
         Self::format_int_signed(v.into(), buf)
+    }
+
+    pub fn format_u16(v: u16, buf: &mut BytesBuf) -> Result<()> {
+        Self::format_int_signed(v.into(), buf)
+    }
+
+    pub fn format_u32(v: u32, buf: &mut BytesBuf) -> Result<()> {
+        if v <= I32_MAX_U32 {
+            Self::format_int_signed(v as i32, buf)
+        } else {
+            Self::format_long_signed(v.into(), buf)
+        }
     }
 
     pub fn format_u64(v: u64, buf: &mut BytesBuf) -> Result<()> {
@@ -624,7 +646,19 @@ mod tests {
     }
 
     #[test]
-    fn test_int_9_1() {
+    fn test_int_5_3() {
+        const V: u32 = 2147483647;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_u32(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x49,0x7f,0xff,0xff,0xff], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_9_1() {
         const V: i64 = 298374982523759;
 
         let mut buf = BytesBufWriter::new();
@@ -633,6 +667,18 @@ mod tests {
         buf.flush().unwrap();
 
         assert_eq!([0x4c,0x0,0x1,0xf,0x5e,0xd6,0xd7,0xdb,0x6f], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_9_2() {
+        const V: i64 = 2147483648;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x4c,0x0,0x0,0x0,0x0,0x80,0x0,0x0,0x0], buf.get().deref());
     }
 
     #[test]
