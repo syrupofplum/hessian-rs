@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::fmt::{Debug, Display};
 use std::io;
 use std::io::Write;
@@ -10,6 +12,7 @@ const I32_MAX_U32: u32 = i32::MAX as u32;
 const I32_MIN_I64: i64 = i32::MIN as i64;
 const I32_MAX_I64: i64 = i32::MAX as i64;
 const I32_MAX_U64: u64 = i32::MAX as u64;
+const I64_MAX_U64: u64 = i64::MAX as u64;
 const F32_MIN_F64: f64 = f32::MIN as f64;
 const F32_MAX_F64: f64 = f32::MAX as f64;
 
@@ -212,21 +215,21 @@ where
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
-        let mut bytes_buf = BytesBuf::with_capacity(2);
+        let mut bytes_buf = BytesBuf::with_capacity(5);
         Formatter::format_u16(v, &mut bytes_buf)?;
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
         Ok(())
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok> {
-        let mut bytes_buf = BytesBuf::with_capacity(2);
+        let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_u32(v, &mut bytes_buf)?;
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
         Ok(())
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok> {
-        let mut bytes_buf = BytesBuf::with_capacity(2);
+        let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_u64(v, &mut bytes_buf)?;
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
         Ok(())
@@ -413,7 +416,7 @@ impl Formatter {
     }
 
     pub fn format_u64(v: u64, buf: &mut BytesBuf) -> Result<()> {
-        if v > I32_MAX_U64 {
+        if v > I64_MAX_U64 {
             return Err(Error{});
         }
         Self::format_long_signed(v as i64, buf)
@@ -658,6 +661,114 @@ mod tests {
     }
 
     #[test]
+    fn test_long_1_1() {
+        const V: i64 = 7;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xe7], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_1_2() {
+        const V: u64 = 15;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_u64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xef], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_1_3() {
+        const V: i64 = -8;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xd8], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_1_4() {
+        const V: i64 = 0;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xe0], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_2_1() {
+        const V: i64 = 2047;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xff,0xff], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_2_2() {
+        const V: i64 = -2048;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_i64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xf0,0x0], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_2_3() {
+        const V: u64 = 1386;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_u64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0xfd,0x6a], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_3_1() {
+        const V: u64 = 36263;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_u64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x3c,0x8d,0xa7], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_5_1() {
+        const V: u64 = 254132517;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_u64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x59,0xf,0x25,0xc1,0x25], buf.get().deref());
+    }
+
+    #[test]
     fn test_long_9_1() {
         const V: i64 = 298374982523759;
 
@@ -682,6 +793,28 @@ mod tests {
     }
 
     #[test]
+    fn test_long_9_3() {
+        const V: u64 = 9223372036854775807;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_u64(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x4c,0x7f,0xff,0xff,0xff,0xff,0xff,0xff,0xff], buf.get().deref());
+    }
+
+    #[test]
+    fn test_long_9_4() {
+        // exceeded i64 max limit
+        const V: u64 = 9223372036854775808;
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        assert!(ser.serialize_u64(V).is_err());
+    }
+
+    #[test]
     fn test_double_9_1() {
         const V: f64 = 897398.5747673;
 
@@ -689,8 +822,6 @@ mod tests {
         let mut ser = Serializer::new(&mut buf);
         ser.serialize_f64(V).unwrap();
         buf.flush().unwrap();
-
-        println!("{:?}", buf.get().deref());
 
         // hessian_rs is wrong
         assert_eq!([0x44,0x41,0x2b,0x62,0xed,0x26,0x47,0xe6,0x49], buf.get().deref());
