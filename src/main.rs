@@ -2,7 +2,6 @@ extern crate core;
 
 use std::fmt::{Debug, Display};
 use std::io;
-use std::io::Write;
 use std::ops::Deref;
 use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant, StdError};
@@ -208,7 +207,7 @@ where
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
-        let mut bytes_buf = BytesBuf::with_capacity(2);
+        let mut bytes_buf = BytesBuf::with_capacity(3);
         Formatter::format_u8(v, &mut bytes_buf)?;
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
         Ok(())
@@ -262,7 +261,10 @@ where
     }
 
     fn serialize_none(self) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(1);
+        Formatter::format_none(&mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        Ok(())
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok> where T: Serialize {
@@ -463,6 +465,12 @@ impl Formatter {
     pub fn format_f64(v: f64, buf: &mut BytesBuf) -> Result<()> {
         Self::format_double(v.into(), buf)
     }
+
+    pub fn format_none(buf: &mut BytesBuf) -> Result<()> {
+        // N
+        buf.put_u8(0x4e);
+        Ok(())
+    }
 }
 
 struct BytesBufWriter {
@@ -484,7 +492,7 @@ impl BytesBufWriter {
     }
 }
 
-impl Write for BytesBufWriter {
+impl io::Write for BytesBufWriter {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.bytes_buf.put(buf);
         Ok(buf.len())
