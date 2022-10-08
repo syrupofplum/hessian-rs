@@ -480,11 +480,14 @@ impl Formatter {
     }
 
     pub fn format_str(v: &str, buf: &mut BytesBuf) -> Result<()> {
-        if v.len() < 32 {
-            buf.put_u8(v.len() as u8);
+        let v_len = v.len();
+        if v_len < 32 {
+            buf.put_u8(v_len as u8);
             buf.put(v.as_bytes());
-        } else {
-
+        } else if v_len < 1024 {
+            buf.put_u8((((v_len >> 8) & 0xff) + 0x30) as u8);
+            buf.put_u8((v_len & 0xff) as u8);
+            buf.put(v.as_bytes());
         }
         Ok(())
     }
@@ -874,6 +877,18 @@ mod tests {
         buf.flush().unwrap();
 
         assert_eq!([0x1,0x63], buf.get().deref());
+    }
+
+    #[test]
+    fn test_string_3_1() {
+        const V: &str = "cccccccccccccccccccccccccccccccc";
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_str(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x30,0x20,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63,0x63], buf.get().deref());
     }
 }
 
