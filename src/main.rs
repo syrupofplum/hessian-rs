@@ -865,7 +865,7 @@ mod tests {
     }
 
     #[test]
-    fn test_string_2_2() {
+    fn test_string_2_1() {
         const V: &str = "c";
 
         let mut buf = BytesBufWriter::new();
