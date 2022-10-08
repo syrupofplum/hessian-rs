@@ -155,6 +155,10 @@ where
             writer
         }
     }
+
+    fn write_buf(&mut self, bytes_buf: BytesMut) -> Result<()> {
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})
+    }
 }
 
 impl <'a, W> ser::Serializer for &'a mut Serializer<'a, W>
@@ -174,77 +178,77 @@ where
     fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(1);
         Formatter::format_bool(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_i8(self, v: i8) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(2);
         Formatter::format_i8(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_i16(self, v: i16) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(3);
         Formatter::format_i16(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_i32(self, v: i32) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(5);
         Formatter::format_i32(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_i64(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(3);
         Formatter::format_u8(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_u16(self, v: u16) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(5);
         Formatter::format_u16(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_u32(self, v: u32) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_u32(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_u64(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_f32(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(9);
         Formatter::format_f64(v, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        self.write_buf(bytes_buf)?;
         Ok(())
     }
 
@@ -253,7 +257,10 @@ where
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(v.len() + 3);
+        Formatter::format_str(v, &mut bytes_buf)?;
+        self.write_buf(bytes_buf)?;
+        Ok(())
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok> {
@@ -469,6 +476,16 @@ impl Formatter {
     pub fn format_none(buf: &mut BytesBuf) -> Result<()> {
         // N
         buf.put_u8(0x4e);
+        Ok(())
+    }
+
+    pub fn format_str(v: &str, buf: &mut BytesBuf) -> Result<()> {
+        if v.len() < 32 {
+            buf.put_u8(v.len() as u8);
+            buf.put(v.as_bytes());
+        } else {
+
+        }
         Ok(())
     }
 }
@@ -833,6 +850,30 @@ mod tests {
 
         // hessian_rs is wrong
         assert_eq!([0x44,0x41,0x2b,0x62,0xed,0x26,0x47,0xe6,0x49], buf.get().deref());
+    }
+
+    #[test]
+    fn test_string_1_1() {
+        const V: &str = "";
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_str(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x0], buf.get().deref());
+    }
+
+    #[test]
+    fn test_string_2_2() {
+        const V: &str = "c";
+
+        let mut buf = BytesBufWriter::new();
+        let mut ser = Serializer::new(&mut buf);
+        ser.serialize_str(V).unwrap();
+        buf.flush().unwrap();
+
+        assert_eq!([0x1,0x63], buf.get().deref());
     }
 }
 
