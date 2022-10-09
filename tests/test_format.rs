@@ -484,3 +484,36 @@ fn test_string_5_2() {
     ret_supposed[98_310] = 0x99;
     assert_eq!(ret_supposed, buf.get().deref());
 }
+
+#[test]
+fn test_string_6_1() {
+    let mut v_string: String = "".to_string();
+    for _ in 0..33_792 {
+        v_string.push('这');
+    }
+    let v: &str = v_string.as_str();
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_str(v).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 101_382] = [0; 101_382];
+    ret_supposed[0] = 0x52;
+    ret_supposed[1] = 0x80;
+    ret_supposed[2] = 0x00;
+    for i in 0..32_768 {
+        ret_supposed[i * 3 + 3] = 0xe8;
+        ret_supposed[i * 3 + 4] = 0xbf;
+        ret_supposed[i * 3 + 5] = 0x99;
+    }
+    ret_supposed[98_307] = 0x53;
+    ret_supposed[98_308] = 0x4;
+    ret_supposed[98_309] = 0x0;
+    for i in 0..1024 {
+        ret_supposed[i * 3 + 98_310] = 0xe8;
+        ret_supposed[i * 3 + 98_311] = 0xbf;
+        ret_supposed[i * 3 + 98_312] = 0x99;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
