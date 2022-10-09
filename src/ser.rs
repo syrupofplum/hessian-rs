@@ -454,7 +454,7 @@ impl Formatter {
     }
 
     pub fn format_str(v: &str, buf: &mut BytesBuf) -> Result<()> {
-        let v_len = v.len();
+        let v_len = v.chars().count();
         if v_len < 32 {
             buf.put_u8(v_len as u8);
             buf.put(v.as_bytes());
@@ -473,8 +473,17 @@ impl Formatter {
             buf.put_u8(0x52);
             buf.put_u8(((STRING_CHUNK_SIZE >> 8) & 0xff) as u8);
             buf.put_u8((STRING_CHUNK_SIZE & 0xff) as u8);
-            buf.put((&v[..STRING_CHUNK_SIZE]).as_bytes());
-            return Self::format_str(&v[STRING_CHUNK_SIZE..], buf);
+            let mut ch_count = 0;
+            let mut sum_utf8_len = 0;
+            for ch in v.chars() {
+                if ch_count >= STRING_CHUNK_SIZE {
+                    break;
+                }
+                sum_utf8_len += ch.len_utf8();
+                ch_count += 1;
+            }
+            buf.put((&v[..sum_utf8_len]).as_bytes());
+            return Self::format_str(&v[sum_utf8_len..], buf);
         }
         Ok(())
     }
