@@ -1,0 +1,16 @@
+pub enum Value {
+    Binary,
+    Boolean(bool),
+    Date,
+    Double(f64),
+    Int(i32),
+    List,
+    Long(i64),
+    Map,
+    Null,
+    Object,
+    Ref,
+    String(String),
+    Type,
+    TypeReferences,
+}
