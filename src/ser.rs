@@ -487,4 +487,19 @@ impl Formatter {
         }
         Ok(())
     }
+
+    pub fn format_binary(v: &[u8], buf: &mut BytesBuf) -> Result<()> {
+        let v_len = v.len();
+        if v_len < 16 {
+            buf.put_u8((v_len + 0x20) as u8);
+            buf.put(v);
+        } else if v_len < 1024 {
+            buf.put_u8(((v_len & 0xff) + 0x34) as u8);
+            buf.put_u8((v_len & 0xff) as u8);
+            buf.put(v);
+        } else {
+            // todo
+        }
+        Ok(())
+    }
 }

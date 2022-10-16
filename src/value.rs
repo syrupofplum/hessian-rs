@@ -1,12 +1,12 @@
 use serde::ser::{Serialize};
 use serde::Serializer;
-use crate::binary::BinaryData;
+use crate::binary::Binary;
 use crate::list::List;
 use crate::map::Map;
 use crate::error::Error;
 
 pub enum Value {
-    Binary(BinaryData),
+    Binary(Binary),
     Boolean(bool),
     Date(i64),
     Double(f64),
