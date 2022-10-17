@@ -4,7 +4,7 @@ use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
 use bytes::{BytesMut, BufMut, Bytes};
 
-use crate::constants::STRING_CHUNK_SIZE;
+use crate::constants::{BINARY_CHUNK_SIZE, STRING_CHUNK_SIZE};
 use crate::error::{Error, Result};
 
 const I32_MAX_U32: u32 = i32::MAX as u32;
@@ -497,8 +497,19 @@ impl Formatter {
             buf.put_u8(((v_len & 0xff) + 0x34) as u8);
             buf.put_u8((v_len & 0xff) as u8);
             buf.put(v);
+        } else if v_len <= BINARY_CHUNK_SIZE {
+            // B
+            buf.put_u8(0x42);
+            buf.put_u8(((v_len >> 8) & 0xff) as u8);
+            buf.put_u8((v_len & 0xff) as u8);
+            buf.put(v);
         } else {
-            // todo
+            // A
+            buf.put_u8(0x41);
+            buf.put_u8(((BINARY_CHUNK_SIZE >> 8) & 0xff) as u8);
+            buf.put_u8((BINARY_CHUNK_SIZE & 0xff) as u8);
+            buf.put(&v[..BINARY_CHUNK_SIZE]);
+            return Self::format_binary(&v[BINARY_CHUNK_SIZE..], buf);
         }
         Ok(())
     }
