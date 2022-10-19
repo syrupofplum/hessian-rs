@@ -227,18 +227,27 @@ impl <'a, W> ser::Serializer for &'a mut Serializer<'a, W>
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(2);
+        Formatter::format_char(v, &mut bytes_buf)?;
+        self.write_buf(bytes_buf)?;
+        Ok(())
     }
 
     fn serialize_str(self, v: &str) -> Result<Self::Ok> {
-        let mut bytes_buf = BytesBuf::with_capacity(v.len() + 3);
+        let v_chars_len = v.chars().count();
+        let v_len = v.len();
+        let mut bytes_buf = BytesBuf::with_capacity(if v_chars_len < STRING_CHUNK_SIZE {v_len + 3} else {(v_chars_len / STRING_CHUNK_SIZE + 1) * 3 + v_len});
         Formatter::format_str(v, &mut bytes_buf)?;
         self.write_buf(bytes_buf)?;
         Ok(())
     }
 
     fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok> {
-        todo!()
+        let v_len = v.len();
+        let mut bytes_buf = BytesBuf::with_capacity(if v_len < BINARY_CHUNK_SIZE {v_len + 3} else {(v_len / BINARY_CHUNK_SIZE + 1) * 3 + v_len});
+        Formatter::format_binary(v, &mut bytes_buf)?;
+        self.write_buf(bytes_buf)?;
+        Ok(())
     }
 
     fn serialize_none(self) -> Result<Self::Ok> {
@@ -451,6 +460,10 @@ impl Formatter {
         // N
         buf.put_u8(0x4e);
         Ok(())
+    }
+
+    pub fn format_char(v: char, buf: &mut BytesBuf) -> Result<()> {
+        Self::format_str(v.to_string().as_str(), buf)
     }
 
     pub fn format_str(v: &str, buf: &mut BytesBuf) -> Result<()> {
