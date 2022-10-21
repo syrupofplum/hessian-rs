@@ -507,7 +507,7 @@ impl Formatter {
             buf.put_u8((v_len + 0x20) as u8);
             buf.put(v);
         } else if v_len < 1024 {
-            buf.put_u8(((v_len & 0xff) + 0x34) as u8);
+            buf.put_u8((((v_len >> 8) & 0xff) + 0x34) as u8);
             buf.put_u8((v_len & 0xff) as u8);
             buf.put(v);
         } else if v_len <= BINARY_CHUNK_SIZE {

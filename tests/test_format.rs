@@ -517,3 +517,306 @@ fn test_string_6_1() {
     }
     assert_eq!(ret_supposed, buf.get().deref());
 }
+
+#[test]
+fn test_binary_0_1() {
+    const V: [u8; 0] = [];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    assert_eq!([0x20], buf.get().deref());
+}
+
+#[test]
+fn test_binary_1_1() {
+    const V: [u8; 1] = [1u8; 1];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    assert_eq!([0x21, 0x1], buf.get().deref());
+}
+
+#[test]
+fn test_binary_1_2() {
+    const V: [u8; 15] = [1u8; 15];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 16] = [0; 16];
+    ret_supposed[0] = 0x2f;
+    for i in 1..16 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_2_1() {
+    const V: [u8; 16] = [1u8; 16];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 18] = [0; 18];
+    ret_supposed[0] = 0x34;
+    ret_supposed[1] = 0x10;
+    for i in 2..18 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_2_2() {
+    const V: [u8; 1_023] = [1u8; 1_023];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 1_025] = [0; 1_025];
+    ret_supposed[0] = 0x37;
+    ret_supposed[1] = 0xff;
+    for i in 2..1_025 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_3_1() {
+    const V: [u8; 1_024] = [1u8; 1_024];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 1_027] = [0; 1_027];
+    ret_supposed[0] = 0x42;
+    ret_supposed[1] = 0x4;
+    ret_supposed[2] = 0x0;
+    for i in 3..1_027 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_3_2() {
+    const V: [u8; 2_048] = [1u8; 2_048];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 2_051] = [0; 2_051];
+    ret_supposed[0] = 0x42;
+    ret_supposed[1] = 0x8;
+    ret_supposed[2] = 0x0;
+    for i in 3..2_051 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_3_3() {
+    const V: [u8; 8_189] = [1u8; 8_189];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 8_192] = [0; 8_192];
+    ret_supposed[0] = 0x42;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_4_1() {
+    const V: [u8; 8_190] = [1u8; 8_190];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 8_194] = [0; 8_194];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x21;
+    ret_supposed[8_193] = 0x1;
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_4_2() {
+    const V: [u8; 8_192] = [1u8; 8_192];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 8_196] = [0; 8_196];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x23;
+    for i in 8_193..8_196 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_5_1() {
+    const V: [u8; 8_205] = [1u8; 8_205];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 8_210] = [0; 8_210];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x34;
+    ret_supposed[8_193] = 0x10;
+    for i in 8_194..8_210 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_5_2() {
+    const V: [u8; 9_212] = [1u8; 9_212];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 9_217] = [0; 9_217];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x37;
+    ret_supposed[8_193] = 0xff;
+    for i in 8_194..9_217 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_6_1() {
+    const V: [u8; 9_213] = [1u8; 9_213];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 9_219] = [0; 9_219];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x42;
+    ret_supposed[8_193] = 0x4;
+    ret_supposed[8_194] = 0x0;
+    for i in 8_195..9_219 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_7_1() {
+    const V: [u8; 16_378] = [1u8; 16_378];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 16_384] = [0; 16_384];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x42;
+    ret_supposed[8_193] = 0x1f;
+    ret_supposed[8_194] = 0xfd;
+    for i in 8_195..16_384 {
+        ret_supposed[i] = 0x1;
+    }
+    assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_binary_8_1() {
+    const V: [u8; 16_379] = [1u8; 16_379];
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    ser.serialize_bytes(&V).unwrap();
+    buf.flush().unwrap();
+
+    let mut ret_supposed: [u8; 16_386] = [0; 16_386];
+    ret_supposed[0] = 0x41;
+    ret_supposed[1] = 0x1f;
+    ret_supposed[2] = 0xfd;
+    for i in 3..8_192 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[8_192] = 0x41;
+    ret_supposed[8_193] = 0x1f;
+    ret_supposed[8_194] = 0xfd;
+    for i in 8_195..16_384 {
+        ret_supposed[i] = 0x1;
+    }
+    ret_supposed[16_384] = 0x21;
+    ret_supposed[16_385] = 0x1;
+    assert_eq!(ret_supposed, buf.get().deref());
+}
