@@ -27,6 +27,24 @@ impl Serialize for Value {
     where
         S: Serializer
     {
-        todo!()
+        match self {
+            Value::Binary(_) => {}
+            Value::Boolean(_) => {}
+            Value::Date(_) => {}
+            Value::Double(_) => {}
+            Value::Int(v) => {
+                return serializer.serialize_i32(*v);
+            },
+            Value::List(_) => {}
+            Value::Long(_) => {}
+            Value::Map(_) => {}
+            Value::Null => {}
+            Value::Object => {}
+            Value::Ref => {}
+            Value::String(_) => {}
+            Value::Type => {}
+            Value::TypeReferences => {}
+        }
+        return serializer.serialize_i32(0);
     }
 }

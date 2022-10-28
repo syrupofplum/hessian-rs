@@ -7,7 +7,7 @@ pub enum List {
     UntypedList(Vec<Value>),
 }
 
-fn get_primitive_type_str(primitive_type: PrimitivesType) -> &'static str {
+pub fn get_primitive_type_str(primitive_type: PrimitivesType) -> &'static str {
     return match primitive_type {
         PrimitivesType::Byte => "[byte",
         PrimitivesType::Short => "[short",
@@ -26,9 +26,23 @@ impl Serialize for List {
         S: Serializer
     {
         match self {
-            List::TypedList(m_type,value_list) => {},
-            List::UntypedList(value_list) => {},
+            List::TypedList(m_type, v_list) => {
+                let v_len = v_list.len();
+                if v_len < 8 {
+                    // serializer.serialize_u8(0x70 + v_len as u8)?;
+                    // serializer.serialize_str(m_type)?;
+                    // for v in v_list {
+                    //     v.serialize(serializer);
+                    // }
+                    return serializer.collect_seq(v_list);
+                } else {
+                    return serializer.serialize_i32(0);
+                }
+            },
+            List::UntypedList(v_list) => {
+                return serializer.serialize_i32(0);
+            },
         }
-        Ok(())
+
     }
 }

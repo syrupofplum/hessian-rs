@@ -14,21 +14,6 @@ pub enum PrimitivesType {
     Char,
 }
 
-impl phf::PhfHash for PrimitivesType {
-    fn phf_hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            PrimitivesType::Byte => state.write_u8(1u8),
-            PrimitivesType::Short => state.write_u8(2u8),
-            PrimitivesType::Int => state.write_u8(3u8),
-            PrimitivesType::Long => state.write_u8(4u8),
-            PrimitivesType::Float => state.write_u8(5u8),
-            PrimitivesType::Double => state.write_u8(6u8),
-            PrimitivesType::Boolean => state.write_u8(7u8),
-            PrimitivesType::Char => state.write_u8(8u8),
-        }
-    }
-}
-
 impl TryFrom<u8> for PrimitivesType {
     type Error = ();
 

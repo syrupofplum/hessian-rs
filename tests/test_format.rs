@@ -5,6 +5,9 @@ use serde::Serializer as OtherSerializer;
 use bytes::{BytesMut, BufMut, Bytes};
 use hessian_rs::ser::{Serializer, BytesBuf};
 use hessian_rs::error::{Error, Result};
+use hessian_rs::list::{get_primitive_type_str, List};
+use hessian_rs::value::Value;
+use hessian_rs::constants::PrimitivesType;
 
 struct BytesBufWriter {
     bytes_buf: BytesBuf,
@@ -819,4 +822,16 @@ fn test_binary_8_1() {
     ret_supposed[16_384] = 0x21;
     ret_supposed[16_385] = 0x1;
     assert_eq!(ret_supposed, buf.get().deref());
+}
+
+#[test]
+fn test_typed_list_int_0_1() {
+    // const V: Value::List = Value::List(List::TypedList(get_primitive_type_str(PrimitivesType::Int).to_string(), vec![]));
+    //
+    // let mut buf = BytesBufWriter::new();
+    // let mut ser = Serializer::new(&mut buf);
+    // ser.serialize_seq(&V).unwrap();
+    // buf.flush().unwrap();
+    //
+    // assert_eq!([0x70,0x4,0x5b,0x69,0x6e,0x74], buf.get().deref());
 }
