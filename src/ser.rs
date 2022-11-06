@@ -17,11 +17,20 @@ const F32_MAX_F64: f64 = f32::MAX as f64;
 
 pub type BytesBuf = BytesMut;
 
-pub struct SerializeResult {
-
+#[doc(hidden)]
+#[derive(Eq, PartialEq)]
+pub enum State {
+    Empty,
+    First,
+    Rest,
 }
 
-impl SerializeSeq for SerializeResult {
+pub struct SerializeResult<'a, W: 'a> {
+    ser: &'a mut Serializer<'a, W>,
+    state: State,
+}
+
+impl<'a, W> SerializeSeq for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -34,7 +43,7 @@ impl SerializeSeq for SerializeResult {
     }
 }
 
-impl SerializeTuple for SerializeResult {
+impl<'a, W> SerializeTuple for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -47,7 +56,7 @@ impl SerializeTuple for SerializeResult {
     }
 }
 
-impl SerializeTupleStruct for SerializeResult {
+impl<'a, W> SerializeTupleStruct for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -60,7 +69,7 @@ impl SerializeTupleStruct for SerializeResult {
     }
 }
 
-impl SerializeTupleVariant for SerializeResult {
+impl<'a, W> SerializeTupleVariant for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -73,7 +82,7 @@ impl SerializeTupleVariant for SerializeResult {
     }
 }
 
-impl SerializeMap for SerializeResult {
+impl<'a, W> SerializeMap for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -90,7 +99,7 @@ impl SerializeMap for SerializeResult {
     }
 }
 
-impl SerializeStruct for SerializeResult {
+impl<'a, W> SerializeStruct for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -103,7 +112,7 @@ impl SerializeStruct for SerializeResult {
     }
 }
 
-impl SerializeStructVariant for SerializeResult {
+impl<'a, W> SerializeStructVariant for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
@@ -141,13 +150,13 @@ impl <'a, W> ser::Serializer for &'a mut Serializer<'a, W>
 {
     type Ok = ();
     type Error = Error;
-    type SerializeSeq = SerializeResult;
-    type SerializeTuple = SerializeResult;
-    type SerializeTupleStruct = SerializeResult;
-    type SerializeTupleVariant = SerializeResult;
-    type SerializeMap = SerializeResult;
-    type SerializeStruct = SerializeResult;
-    type SerializeStructVariant = SerializeResult;
+    type SerializeSeq = SerializeResult<'a, W>;
+    type SerializeTuple = SerializeResult<'a, W>;
+    type SerializeTupleStruct = SerializeResult<'a, W>;
+    type SerializeTupleVariant = SerializeResult<'a, W>;
+    type SerializeMap = SerializeResult<'a, W>;
+    type SerializeStruct = SerializeResult<'a, W>;
+    type SerializeStructVariant = SerializeResult<'a, W>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
         let mut bytes_buf = BytesBuf::with_capacity(1);
