@@ -3,9 +3,11 @@ use std::ops::Deref;
 use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
 use bytes::{BytesMut, BufMut, Bytes};
+use serde_json::ser::Compound;
 
-use crate::constants::{BINARY_CHUNK_SIZE, STRING_CHUNK_SIZE};
+use crate::constants::{BINARY_CHUNK_SIZE, STRING_CHUNK_SIZE, PRIMITIVE_TYPE_MAP, PrimitiveType};
 use crate::error::{Error, Result};
+use crate::list::get_primitive_type_str;
 
 const I32_MAX_U32: u32 = i32::MAX as u32;
 const I32_MIN_I64: i64 = i32::MIN as i64;
@@ -25,21 +27,43 @@ pub enum State {
     Rest,
 }
 
-pub struct SerializeResult<'a, W: 'a> {
-    ser: &'a mut Serializer<'a, W>,
+pub struct SerializeResult<'a, W> {
+    ser: &'a mut Serializer<W>,
     state: State,
 }
 
-impl<'a, W> SerializeSeq for SerializeResult<'a, W> {
+impl<'a, W> SerializeResult<'a, W> {
+    pub fn new(ser: &'a mut Serializer<W>, state: State) -> Self {
+        SerializeResult {
+            ser,
+            state,
+        }
+    }
+}
+
+impl<'a, W> SerializeSeq for SerializeResult<'a, W>
+where
+    W: io::Write
+{
     type Ok = ();
     type Error = Error;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
-        todo!()
+        if State::Empty == self.state || State::First == self.state {
+            let type_name = std::any::type_name::<T>();
+            let ref mut ref_ser = *self.ser;
+            if let Some(primitive_type) = PRIMITIVE_TYPE_MAP.get(type_name) {
+                ref_ser.serialize_str(get_primitive_type_str(primitive_type))?;
+            }
+        }
+        self.state = State::Rest;
+        let ref mut ref_ser = *self.ser;
+        value.serialize(ref_ser)?;
+        Ok(())
     }
 
     fn end(self) -> Result<Self::Ok> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -125,15 +149,15 @@ impl<'a, W> SerializeStructVariant for SerializeResult<'a, W> {
     }
 }
 
-pub struct Serializer<'a, W> {
-    writer: &'a mut W
+pub struct Serializer<W> {
+    writer: W
 }
 
-impl <'a, W> Serializer<'a, W>
-    where
-        W: io::Write,
+impl <W> Serializer<W>
+where
+    W: io::Write
 {
-    pub fn new(writer: &'a mut W) -> Self {
+    pub fn new(writer: W) -> Self {
         Serializer {
             writer
         }
@@ -144,9 +168,9 @@ impl <'a, W> Serializer<'a, W>
     }
 }
 
-impl <'a, W> ser::Serializer for &'a mut Serializer<'a, W>
-    where
-        W: io::Write
+impl <'a, W> ser::Serializer for &'a mut Serializer<W>
+where
+    W: io::Write
 {
     type Ok = ();
     type Error = Error;
@@ -291,7 +315,21 @@ impl <'a, W> ser::Serializer for &'a mut Serializer<'a, W>
     }
 
     fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(5);
+        if let Some(v_len) = len {
+            if 0 == v_len {
+                Formatter::format_untyped_list_header(v_len, &mut bytes_buf)?;
+            } else {
+                Formatter::format_typed_list_header(v_len, &mut bytes_buf)?;
+            }
+            self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+            return if v_len == 0 {
+                Ok(SerializeResult::new(self, State::Empty))
+            } else {
+                Ok(SerializeResult::new(self, State::First))
+            }
+        }
+        Err(Error{})
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
@@ -532,6 +570,34 @@ impl Formatter {
             buf.put_u8((BINARY_CHUNK_SIZE & 0xff) as u8);
             buf.put(&v[..BINARY_CHUNK_SIZE]);
             return Self::format_binary(&v[BINARY_CHUNK_SIZE..], buf);
+        }
+        Ok(())
+    }
+
+    pub fn format_typed_list_header(v_len: usize, buf: &mut BytesBuf) -> Result<()> {
+        if v_len > I32_MAX_U32 as usize {
+            return Err(Error{});
+        }
+        if v_len < 8 {
+            buf.put_u8((v_len + 0x70) as u8);
+        } else {
+            // V
+            buf.put_u8(0x56);
+            buf.put_i32(v_len as i32);
+        }
+        Ok(())
+    }
+
+    pub fn format_untyped_list_header(v_len: usize, buf: &mut BytesBuf) -> Result<()> {
+        if v_len > I32_MAX_U32 as usize {
+            return Err(Error{});
+        }
+        if v_len < 8 {
+            buf.put_u8((v_len + 0x78) as u8);
+        } else {
+            // X
+            buf.put_u8(0x58);
+            buf.put_i32(v_len as i32);
         }
         Ok(())
     }
