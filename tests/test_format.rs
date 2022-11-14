@@ -3,7 +3,7 @@ use std::io::Write;
 use std::ops::Deref;
 use serde::Serializer as OtherSerializer;
 use bytes::{BytesMut, BufMut, Bytes};
-use serde::ser::SerializeSeq;
+use serde::ser::{SerializeSeq, SerializeStruct};
 use hessian_rs::ser::{Serializer, BytesBuf};
 use hessian_rs::error::{Error, Result};
 use hessian_rs::list::{get_primitive_type_str, List};
@@ -835,12 +835,11 @@ fn test_typed_list_int_0_1() {
     for element in v {
         seq.serialize_element(&element).unwrap();
     }
-    seq.end().unwrap();
+    SerializeSeq::end(seq).unwrap();
     buf.flush().unwrap();
 
     assert_eq!([0x78], buf.get().deref());
 }
-
 
 #[test]
 fn test_typed_list_int_1_1() {
@@ -852,8 +851,25 @@ fn test_typed_list_int_1_1() {
     for element in v {
         seq.serialize_element(&element).unwrap();
     }
-    seq.end().unwrap();
+    SerializeSeq::end(seq).unwrap();
     buf.flush().unwrap();
 
     assert_eq!([0x71,0x4,0x5b,0x69,0x6e,0x74,0x91], buf.get().deref());
+}
+
+#[test]
+fn test_object_class_1_1() {
+    struct Test {
+        v: i32
+    }
+    let v: Test = Test {v: 1};
+
+    let mut buf = BytesBufWriter::new();
+    let mut ser = Serializer::new(&mut buf);
+    let mut obj = ser.serialize_struct("com.syrupofplum.hessian.Test", 1).unwrap();
+    obj.serialize_field("v", &1).unwrap();
+    SerializeStruct::end(obj).unwrap();
+    buf.flush().unwrap();
+
+    assert_eq!([0x43,0x1c,0x63,0x6f,0x6d,0x2e,0x73,0x79,0x72,0x75,0x70,0x6f,0x66,0x70,0x6c,0x75,0x6d,0x2e,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x91,0x1,0x76,0x60,0x91], buf.get().deref());
 }

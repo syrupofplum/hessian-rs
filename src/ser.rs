@@ -128,11 +128,11 @@ impl<'a, W> SerializeStruct for SerializeResult<'a, W> {
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok> where T: Serialize {
-        todo!()
+        Ok(())
     }
 
     fn end(self) -> Result<Self::Ok> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -349,7 +349,14 @@ where
     }
 
     fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-        todo!()
+        let mut bytes_buf = BytesBuf::with_capacity(1 + name.len());
+        Formatter::format_object_class_header(name, len, &mut bytes_buf)?;
+        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        return if len == 0 {
+            Ok(SerializeResult::new(self, State::Empty))
+        } else {
+            Ok(SerializeResult::new(self, State::First))
+        }
     }
 
     fn serialize_struct_variant(self, name: &'static str, variant_index: u32, variant: &'static str, len: usize) -> Result<Self::SerializeStructVariant> {
@@ -599,6 +606,14 @@ impl Formatter {
             buf.put_u8(0x58);
             buf.put_i32(v_len as i32);
         }
+        Ok(())
+    }
+
+    pub fn format_object_class_header(name: &str, len: usize, buf: &mut BytesBuf) -> Result<()> {
+        // C
+        buf.put_u8(0x43);
+        Formatter::format_str(name, buf)?;
+        Formatter::format_int_signed(len as i32, buf)?;
         Ok(())
     }
 }
