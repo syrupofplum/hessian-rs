@@ -27,9 +27,15 @@ pub enum State {
     Rest,
 }
 
+pub struct SerializeElementInfo<W> {
+    type_name: String,
+    value: Serializer<W>,
+}
+
 pub struct SerializeResult<'a, W> {
     ser: &'a mut Serializer<W>,
     state: State,
+    value_result_list: Option<Vec<SerializeElementInfo<W>>>
 }
 
 impl<'a, W> SerializeResult<'a, W> {
@@ -37,6 +43,7 @@ impl<'a, W> SerializeResult<'a, W> {
         SerializeResult {
             ser,
             state,
+            value_result_list: None,
         }
     }
 }
