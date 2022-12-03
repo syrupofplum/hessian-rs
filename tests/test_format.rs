@@ -23,9 +23,10 @@ impl BytesBufWriter {
         }
     }
 
-    fn get(&self) -> Bytes {
+    fn get(mut self) -> Result<Bytes> {
         // println!("{:?}", self.bytes_result);
-        self.bytes_result.clone().unwrap()
+        self.flush().map_err(|_| Error{})?;
+        self.bytes_result.ok_or(Error{})
     }
 }
 
@@ -50,9 +51,8 @@ fn test_bool_false() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bool(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x46], buf.get().deref());
+    assert_eq!([0x46], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -62,9 +62,8 @@ fn test_bool_true() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bool(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x54], buf.get().deref());
+    assert_eq!([0x54], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -74,9 +73,8 @@ fn test_int_1_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i8(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xb3], buf.get().deref());
+    assert_eq!([0xb3], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -86,9 +84,8 @@ fn test_int_1_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i8(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x85], buf.get().deref());
+    assert_eq!([0x85], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -98,9 +95,8 @@ fn test_int_2_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i16(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xc8,0x75], buf.get().deref());
+    assert_eq!([0xc8,0x75], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -110,9 +106,8 @@ fn test_int_2_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i16(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xce,0xc8], buf.get().deref());
+    assert_eq!([0xce,0xc8], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -122,9 +117,8 @@ fn test_int_2_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i16(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xc0,0xd3], buf.get().deref());
+    assert_eq!([0xc0,0xd3], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -134,9 +128,8 @@ fn test_int_3_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i32(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xd6,0x14,0x61], buf.get().deref());
+    assert_eq!([0xd6,0x14,0x61], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -146,9 +139,8 @@ fn test_int_3_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i32(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xd3,0xf1,0x9d], buf.get().deref());
+    assert_eq!([0xd3,0xf1,0x9d], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -158,9 +150,8 @@ fn test_int_3_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i32(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xd2,0xab,0x3c], buf.get().deref());
+    assert_eq!([0xd2,0xab,0x3c], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -170,9 +161,8 @@ fn test_int_5_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i32(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x49,0x0,0x8a,0xa9,0x9b], buf.get().deref());
+    assert_eq!([0x49,0x0,0x8a,0xa9,0x9b], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -182,9 +172,8 @@ fn test_int_5_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i32(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x49,0xff,0x91,0x95,0x69], buf.get().deref());
+    assert_eq!([0x49,0xff,0x91,0x95,0x69], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -194,9 +183,8 @@ fn test_int_5_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_u32(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x49,0x7f,0xff,0xff,0xff], buf.get().deref());
+    assert_eq!([0x49,0x7f,0xff,0xff,0xff], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -206,9 +194,8 @@ fn test_long_1_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xe7], buf.get().deref());
+    assert_eq!([0xe7], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -218,9 +205,8 @@ fn test_long_1_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_u64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xef], buf.get().deref());
+    assert_eq!([0xef], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -230,9 +216,8 @@ fn test_long_1_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xd8], buf.get().deref());
+    assert_eq!([0xd8], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -242,9 +227,8 @@ fn test_long_1_4() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xe0], buf.get().deref());
+    assert_eq!([0xe0], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -254,9 +238,8 @@ fn test_long_2_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xff,0xff], buf.get().deref());
+    assert_eq!([0xff,0xff], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -266,9 +249,8 @@ fn test_long_2_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xf0,0x0], buf.get().deref());
+    assert_eq!([0xf0,0x0], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -278,9 +260,8 @@ fn test_long_2_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_u64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0xfd,0x6a], buf.get().deref());
+    assert_eq!([0xfd,0x6a], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -290,9 +271,8 @@ fn test_long_3_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_u64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x3c,0x8d,0xa7], buf.get().deref());
+    assert_eq!([0x3c,0x8d,0xa7], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -302,9 +282,8 @@ fn test_long_5_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_u64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x59,0xf,0x25,0xc1,0x25], buf.get().deref());
+    assert_eq!([0x59,0xf,0x25,0xc1,0x25], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -314,9 +293,8 @@ fn test_long_9_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x4c,0x0,0x1,0xf,0x5e,0xd6,0xd7,0xdb,0x6f], buf.get().deref());
+    assert_eq!([0x4c,0x0,0x1,0xf,0x5e,0xd6,0xd7,0xdb,0x6f], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -326,9 +304,8 @@ fn test_long_9_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_i64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x4c,0x0,0x0,0x0,0x0,0x80,0x0,0x0,0x0], buf.get().deref());
+    assert_eq!([0x4c,0x0,0x0,0x0,0x0,0x80,0x0,0x0,0x0], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -338,9 +315,8 @@ fn test_long_9_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_u64(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x4c,0x7f,0xff,0xff,0xff,0xff,0xff,0xff,0xff], buf.get().deref());
+    assert_eq!([0x4c,0x7f,0xff,0xff,0xff,0xff,0xff,0xff,0xff], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -360,10 +336,9 @@ fn test_double_9_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_f64(V).unwrap();
-    buf.flush().unwrap();
 
     // hessian_rs is wrong
-    assert_eq!([0x44,0x41,0x2b,0x62,0xed,0x26,0x47,0xe6,0x49], buf.get().deref());
+    assert_eq!([0x44,0x41,0x2b,0x62,0xed,0x26,0x47,0xe6,0x49], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -373,9 +348,8 @@ fn test_string_1_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x0], buf.get().deref());
+    assert_eq!([0x0], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -385,9 +359,8 @@ fn test_string_2_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x1,0x63], buf.get().deref());
+    assert_eq!([0x1,0x63], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -401,7 +374,6 @@ fn test_string_3_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(v).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 34] = [0; 34];
     ret_supposed[0] = 0x30;
@@ -409,7 +381,7 @@ fn test_string_3_1() {
     for i in 2..34 {
         ret_supposed[i] = 0x63;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -423,7 +395,6 @@ fn test_string_4_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(v).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 1_027] = [0; 1_027];
     ret_supposed[0] = 0x53;
@@ -432,7 +403,7 @@ fn test_string_4_1() {
     for i in 3..1_027 {
         ret_supposed[i] = 0x63;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -446,7 +417,6 @@ fn test_string_5_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(v).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 32_773] = [0; 32_773];
     ret_supposed[0] = 0x52;
@@ -457,7 +427,7 @@ fn test_string_5_1() {
     }
     ret_supposed[32_771] = 0x1;
     ret_supposed[32_772] = 0x63;
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -471,7 +441,6 @@ fn test_string_5_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(v).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 98_311] = [0; 98_311];
     ret_supposed[0] = 0x52;
@@ -486,7 +455,7 @@ fn test_string_5_2() {
     ret_supposed[98_308] = 0xe8;
     ret_supposed[98_309] = 0xbf;
     ret_supposed[98_310] = 0x99;
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -500,7 +469,6 @@ fn test_string_6_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_str(v).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 101_382] = [0; 101_382];
     ret_supposed[0] = 0x52;
@@ -519,7 +487,7 @@ fn test_string_6_1() {
         ret_supposed[i * 3 + 98_311] = 0xbf;
         ret_supposed[i * 3 + 98_312] = 0x99;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -529,9 +497,8 @@ fn test_binary_0_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x20], buf.get().deref());
+    assert_eq!([0x20], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -541,9 +508,8 @@ fn test_binary_1_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x21, 0x1], buf.get().deref());
+    assert_eq!([0x21, 0x1], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -553,14 +519,13 @@ fn test_binary_1_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 16] = [0; 16];
     ret_supposed[0] = 0x2f;
     for i in 1..16 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -570,7 +535,6 @@ fn test_binary_2_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 18] = [0; 18];
     ret_supposed[0] = 0x34;
@@ -578,7 +542,7 @@ fn test_binary_2_1() {
     for i in 2..18 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -588,7 +552,6 @@ fn test_binary_2_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 1_025] = [0; 1_025];
     ret_supposed[0] = 0x37;
@@ -596,7 +559,7 @@ fn test_binary_2_2() {
     for i in 2..1_025 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -606,7 +569,6 @@ fn test_binary_3_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 1_027] = [0; 1_027];
     ret_supposed[0] = 0x42;
@@ -615,7 +577,7 @@ fn test_binary_3_1() {
     for i in 3..1_027 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -625,7 +587,6 @@ fn test_binary_3_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 2_051] = [0; 2_051];
     ret_supposed[0] = 0x42;
@@ -634,7 +595,7 @@ fn test_binary_3_2() {
     for i in 3..2_051 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -644,7 +605,6 @@ fn test_binary_3_3() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 8_192] = [0; 8_192];
     ret_supposed[0] = 0x42;
@@ -653,7 +613,7 @@ fn test_binary_3_3() {
     for i in 3..8_192 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -663,7 +623,6 @@ fn test_binary_4_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 8_194] = [0; 8_194];
     ret_supposed[0] = 0x41;
@@ -674,7 +633,7 @@ fn test_binary_4_1() {
     }
     ret_supposed[8_192] = 0x21;
     ret_supposed[8_193] = 0x1;
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -684,7 +643,6 @@ fn test_binary_4_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 8_196] = [0; 8_196];
     ret_supposed[0] = 0x41;
@@ -697,7 +655,7 @@ fn test_binary_4_2() {
     for i in 8_193..8_196 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -707,7 +665,6 @@ fn test_binary_5_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 8_210] = [0; 8_210];
     ret_supposed[0] = 0x41;
@@ -721,7 +678,7 @@ fn test_binary_5_1() {
     for i in 8_194..8_210 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -731,7 +688,6 @@ fn test_binary_5_2() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 9_217] = [0; 9_217];
     ret_supposed[0] = 0x41;
@@ -745,7 +701,7 @@ fn test_binary_5_2() {
     for i in 8_194..9_217 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -755,7 +711,6 @@ fn test_binary_6_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 9_219] = [0; 9_219];
     ret_supposed[0] = 0x41;
@@ -770,7 +725,7 @@ fn test_binary_6_1() {
     for i in 8_195..9_219 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -780,7 +735,6 @@ fn test_binary_7_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 16_384] = [0; 16_384];
     ret_supposed[0] = 0x41;
@@ -795,7 +749,7 @@ fn test_binary_7_1() {
     for i in 8_195..16_384 {
         ret_supposed[i] = 0x1;
     }
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -805,7 +759,6 @@ fn test_binary_8_1() {
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
     ser.serialize_bytes(&V).unwrap();
-    buf.flush().unwrap();
 
     let mut ret_supposed: [u8; 16_386] = [0; 16_386];
     ret_supposed[0] = 0x41;
@@ -822,7 +775,7 @@ fn test_binary_8_1() {
     }
     ret_supposed[16_384] = 0x21;
     ret_supposed[16_385] = 0x1;
-    assert_eq!(ret_supposed, buf.get().deref());
+    assert_eq!(ret_supposed, buf.get().unwrap().deref());
 }
 
 #[test]
@@ -836,9 +789,8 @@ fn test_typed_list_int_0_1() {
         seq.serialize_element(&element).unwrap();
     }
     SerializeSeq::end(seq).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x78], buf.get().deref());
+    assert_eq!([0x78], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -852,9 +804,8 @@ fn test_typed_list_int_1_1() {
         seq.serialize_element(&element).unwrap();
     }
     SerializeSeq::end(seq).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x71,0x4,0x5b,0x69,0x6e,0x74,0x91], buf.get().deref());
+    assert_eq!([0x71,0x4,0x5b,0x69,0x6e,0x74,0x91], buf.get().unwrap().deref());
 }
 
 #[test]
@@ -869,7 +820,6 @@ fn test_object_class_1_1() {
     let mut obj = ser.serialize_struct("com.syrupofplum.hessian.Test", 1).unwrap();
     obj.serialize_field("v", &1).unwrap();
     SerializeStruct::end(obj).unwrap();
-    buf.flush().unwrap();
 
-    assert_eq!([0x43,0x1c,0x63,0x6f,0x6d,0x2e,0x73,0x79,0x72,0x75,0x70,0x6f,0x66,0x70,0x6c,0x75,0x6d,0x2e,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x91,0x1,0x76,0x60,0x91], buf.get().deref());
+    assert_eq!([0x43,0x1c,0x63,0x6f,0x6d,0x2e,0x73,0x79,0x72,0x75,0x70,0x6f,0x66,0x70,0x6c,0x75,0x6d,0x2e,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x91,0x1,0x76,0x60,0x91], buf.get().unwrap().deref());
 }

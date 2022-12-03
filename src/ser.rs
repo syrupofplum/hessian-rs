@@ -1,4 +1,5 @@
 use std::io;
+use std::io::Write;
 use std::ops::Deref;
 use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
@@ -19,6 +20,40 @@ const F32_MAX_F64: f64 = f32::MAX as f64;
 
 pub type BytesBuf = BytesMut;
 
+struct BytesBufWriter {
+    bytes_buf: BytesBuf,
+    bytes_result: Option<Bytes>
+}
+
+impl BytesBufWriter {
+    fn new() -> Self {
+        BytesBufWriter {
+            bytes_buf: BytesBuf::new(),
+            bytes_result: None,
+        }
+    }
+
+    fn get(mut self) -> Result<Bytes> {
+        // println!("{:?}", self.bytes_result);
+        self.flush().map_err(|_| Error{})?;
+        self.bytes_result.ok_or(Error{})
+    }
+}
+
+impl io::Write for BytesBufWriter {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.bytes_buf.put(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        let bytes_buf = self.bytes_buf.clone();
+        let bytes = bytes_buf.freeze();
+        self.bytes_result = Some(bytes);
+        Ok(())
+    }
+}
+
 #[doc(hidden)]
 #[derive(Eq, PartialEq)]
 pub enum State {
@@ -28,14 +63,21 @@ pub enum State {
 }
 
 pub struct SerializeElementInfo<W> {
-    type_name: String,
-    value: Serializer<W>,
+    ser: Serializer<W>,
+}
+
+impl<W> SerializeElementInfo<W> {
+    pub fn new(ser: Serializer<W>) -> Self {
+        SerializeElementInfo {
+            ser,
+        }
+    }
 }
 
 pub struct SerializeResult<'a, W> {
     ser: &'a mut Serializer<W>,
     state: State,
-    value_result_list: Option<Vec<SerializeElementInfo<W>>>
+    value_buf_list: Option<Vec<BytesBufWriter>>
 }
 
 impl<'a, W> SerializeResult<'a, W> {
@@ -43,7 +85,7 @@ impl<'a, W> SerializeResult<'a, W> {
         SerializeResult {
             ser,
             state,
-            value_result_list: None,
+            value_buf_list: None,
         }
     }
 }
@@ -130,15 +172,39 @@ impl<'a, W> SerializeMap for SerializeResult<'a, W> {
     }
 }
 
-impl<'a, W> SerializeStruct for SerializeResult<'a, W> {
+impl<'a, W> SerializeStruct for SerializeResult<'a, W>
+where
+    W: io::Write
+{
     type Ok = ();
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok> where T: Serialize {
+        if State::First == self.state {
+            self.value_buf_list = Some(Vec::new());
+        }
+        self.state = State::Rest;
+        let ref mut ref_ser = *self.ser;
+        ref_ser.serialize_str(key)?;
+
+        // stash value
+        let mut value_buf = BytesBufWriter::new();
+        let mut value_ser = Serializer::new(&mut value_buf);
+        value.serialize(&mut value_ser)?;
+        if let Some(value_buf_list) = &mut self.value_buf_list {
+            value_buf_list.push(value_buf);
+        }
+
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok> {
+        if let Some(value_buf_list) = self.value_buf_list {
+            for value_buf in value_buf_list {
+                self.ser.write_buf_raw(&[0x60])?;
+                self.ser.write_buf_raw(value_buf.get()?.deref())?;
+            }
+        }
         Ok(())
     }
 }
@@ -172,6 +238,10 @@ where
 
     fn write_buf(&mut self, bytes_buf: BytesMut) -> Result<()> {
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})
+    }
+
+    fn write_buf_raw(&mut self, bytes: &[u8]) -> Result<()> {
+        self.writer.write_all(bytes).map_err(|_| Error{})
     }
 }
 
