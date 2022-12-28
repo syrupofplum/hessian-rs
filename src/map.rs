@@ -1,4 +1,4 @@
-pub enum Map {
+pub enum Hessian2Map {
     TypedMap,
     UntypedMap,
 }

@@ -1,19 +1,19 @@
 use serde::ser::{Serialize};
 use serde::Serializer;
-use crate::binary::Binary;
-use crate::list::List;
-use crate::map::Map;
+use crate::binary::Hessian2Binary;
+use crate::list::Hessian2List;
+use crate::map::Hessian2Map;
 use crate::error::Error;
 
 pub enum Value {
-    Binary(Binary),
+    Binary(Hessian2Binary),
     Boolean(bool),
     Date(i64),
     Double(f64),
     Int(i32),
-    List(List),
+    List(Hessian2List),
     Long(i64),
-    Map(Map),
+    Map(Hessian2Map),
     Null,
     Object,
     Ref,

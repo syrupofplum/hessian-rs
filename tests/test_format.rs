@@ -6,7 +6,7 @@ use bytes::{BytesMut, BufMut, Bytes};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use hessian_rs::ser::{Serializer, BytesBuf};
 use hessian_rs::error::{Error, Result};
-use hessian_rs::list::{get_primitive_type_str, List};
+use hessian_rs::list::{get_primitive_type_str, Hessian2List};
 use hessian_rs::value::Value;
 use hessian_rs::constants::PrimitiveType;
 
@@ -817,7 +817,7 @@ fn test_object_class_1_1() {
 
     let mut buf = BytesBufWriter::new();
     let mut ser = Serializer::new(&mut buf);
-    let mut obj = ser.serialize_struct("com.syrupofplum.hessian.Test", 1).unwrap();
+    let mut obj = ser.serialize_struct("com.syrupofplum.hessian.Test", 0).unwrap();
     obj.serialize_field("v", &1).unwrap();
     SerializeStruct::end(obj).unwrap();
 

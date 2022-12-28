@@ -5,3 +5,4 @@ pub mod value;
 pub mod binary;
 pub mod list;
 pub mod map;
+pub mod class;

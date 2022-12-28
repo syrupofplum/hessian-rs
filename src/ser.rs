@@ -77,7 +77,8 @@ impl<W> SerializeElementInfo<W> {
 pub struct SerializeResult<'a, W> {
     ser: &'a mut Serializer<W>,
     state: State,
-    value_buf_list: Option<Vec<BytesBufWriter>>
+    key_buf_list: Option<Vec<BytesBufWriter>>,
+    value_buf_list: Option<Vec<BytesBufWriter>>,
 }
 
 impl<'a, W> SerializeResult<'a, W> {
@@ -85,6 +86,7 @@ impl<'a, W> SerializeResult<'a, W> {
         SerializeResult {
             ser,
             state,
+            key_buf_list: None,
             value_buf_list: None,
         }
     }
@@ -181,11 +183,18 @@ where
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok> where T: Serialize {
         if State::First == self.state {
+            self.key_buf_list = Some(Vec::new());
             self.value_buf_list = Some(Vec::new());
         }
         self.state = State::Rest;
-        let ref mut ref_ser = *self.ser;
-        ref_ser.serialize_str(key)?;
+
+        // stash key
+        let mut key_buf = BytesBufWriter::new();
+        let mut key_ser = Serializer::new(&mut key_buf);
+        key.serialize(&mut key_ser)?;
+        if let Some(key_buf_list) = &mut self.key_buf_list {
+            key_buf_list.push(key_buf);
+        }
 
         // stash value
         let mut value_buf = BytesBufWriter::new();
@@ -199,6 +208,17 @@ where
     }
 
     fn end(self) -> Result<Self::Ok> {
+        if self.key_buf_list.is_none() || self.value_buf_list.is_none() {
+            return Ok(());
+        }
+        if let Some(key_buf_list) = self.key_buf_list {
+            let mut bytes_buf = BytesBuf::with_capacity(4);
+            Formatter::format_int_signed(key_buf_list.len() as i32, &mut bytes_buf)?;
+            self.ser.write_buf(bytes_buf)?;
+            for key_buf in key_buf_list {
+                self.ser.write_buf_raw(key_buf.get()?.deref())?;
+            }
+        }
         if let Some(value_buf_list) = self.value_buf_list {
             for value_buf in value_buf_list {
                 self.ser.write_buf_raw(&[0x60])?;
@@ -429,11 +449,7 @@ where
         let mut bytes_buf = BytesBuf::with_capacity(1 + name.len());
         Formatter::format_object_class_header(name, len, &mut bytes_buf)?;
         self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
-        return if len == 0 {
-            Ok(SerializeResult::new(self, State::Empty))
-        } else {
-            Ok(SerializeResult::new(self, State::First))
-        }
+        Ok(SerializeResult::new(self, State::First))
     }
 
     fn serialize_struct_variant(self, name: &'static str, variant_index: u32, variant: &'static str, len: usize) -> Result<Self::SerializeStructVariant> {
@@ -690,7 +706,6 @@ impl Formatter {
         // C
         buf.put_u8(0x43);
         Formatter::format_str(name, buf)?;
-        Formatter::format_int_signed(len as i32, buf)?;
         Ok(())
     }
 }
