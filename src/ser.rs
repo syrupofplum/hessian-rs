@@ -4,7 +4,6 @@ use std::ops::Deref;
 use serde::{ser, Serialize, Serializer as OtherSerializer};
 use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
 use bytes::{BytesMut, BufMut, Bytes};
-use serde_json::ser::Compound;
 
 use crate::constants::{BINARY_CHUNK_SIZE, STRING_CHUNK_SIZE, PRIMITIVE_TYPE_MAP, PrimitiveType};
 use crate::error::{Error, Result};
@@ -77,6 +76,8 @@ impl<W> SerializeElementInfo<W> {
 pub struct SerializeResult<'a, W> {
     ser: &'a mut Serializer<W>,
     state: State,
+    is_pack_type: bool,
+    pack_buf: Option<BytesBufWriter>,
     key_buf_list: Option<Vec<BytesBufWriter>>,
     value_buf_list: Option<Vec<BytesBufWriter>>,
 }
@@ -86,6 +87,8 @@ impl<'a, W> SerializeResult<'a, W> {
         SerializeResult {
             ser,
             state,
+            is_pack_type: false,
+            pack_buf: None,
             key_buf_list: None,
             value_buf_list: None,
         }
@@ -182,6 +185,15 @@ where
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok> where T: Serialize {
+        if key.is_empty() {
+            self.is_pack_type = true;
+            let mut pack_buf = BytesBufWriter::new();
+            let mut pack_ser = Serializer::new(&mut pack_buf);
+            value.serialize(&mut pack_ser)?;
+            self.pack_buf = Some(pack_buf);
+            return Ok(());
+        }
+
         if State::First == self.state {
             self.key_buf_list = Some(Vec::new());
             self.value_buf_list = Some(Vec::new());
@@ -208,7 +220,14 @@ where
     }
 
     fn end(self) -> Result<Self::Ok> {
+        if self.is_pack_type {
+            if let Some(pack_buf) = self.pack_buf {
+                self.ser.write_buf_raw(pack_buf.get()?.deref())?;
+            }
+            return Ok(())
+        }
         if self.key_buf_list.is_none() || self.value_buf_list.is_none() {
+            self.ser.write_buf_raw(&[0x90, 0x60])?;
             return Ok(());
         }
         if let Some(key_buf_list) = self.key_buf_list {
@@ -446,9 +465,11 @@ where
     }
 
     fn serialize_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-        let mut bytes_buf = BytesBuf::with_capacity(1 + name.len());
-        Formatter::format_object_class_header(name, len, &mut bytes_buf)?;
-        self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+        if usize::MAX == len {
+            let mut bytes_buf = BytesBuf::with_capacity(1 + name.len());
+            Formatter::format_object_class_header(name, &mut bytes_buf)?;
+            self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error {})?;
+        }
         Ok(SerializeResult::new(self, State::First))
     }
 
@@ -702,7 +723,7 @@ impl Formatter {
         Ok(())
     }
 
-    pub fn format_object_class_header(name: &str, len: usize, buf: &mut BytesBuf) -> Result<()> {
+    pub fn format_object_class_header(name: &str, buf: &mut BytesBuf) -> Result<()> {
         // C
         buf.put_u8(0x43);
         Formatter::format_str(name, buf)?;

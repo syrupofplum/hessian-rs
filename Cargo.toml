@@ -8,13 +8,8 @@ edition = "2021"
 [dependencies]
 bytes = { version = "1.2", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
 phf = { version = "0.11", features = ["macros"] }
 
 [lib]
 name = "hessian_rs"
 path = "src/lib.rs"
-
-[[bin]]
-name = "hessian_rs_main"
-path = "src/main.rs"
