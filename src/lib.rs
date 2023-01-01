@@ -11,7 +11,7 @@ pub mod list;
 pub mod map;
 pub mod class;
 
-pub fn to_hessian2<T>(obj: &class::Hessian2Class<T>) -> error::Result<Vec<u8>>
+pub fn to_hessian2<T>(obj: &value::Value<T>) -> error::Result<Vec<u8>>
 where
     T: Serialize
 {

@@ -2,9 +2,9 @@ use serde::{Serialize, Serializer};
 use crate::constants::PrimitiveType;
 use crate::value::Value;
 
-pub enum Hessian2List {
-    TypedList(String, Vec<Value>),
-    UntypedList(Vec<Value>),
+pub enum List<T> {
+    TypedList(String, Vec<Value<T>>),
+    UntypedList(Vec<Value<T>>),
 }
 
 pub fn get_primitive_type_str(primitive_type: &PrimitiveType) -> &'static str {
@@ -20,16 +20,19 @@ pub fn get_primitive_type_str(primitive_type: &PrimitiveType) -> &'static str {
     }
 }
 
-impl Serialize for Hessian2List {
+impl<T> Serialize for List<T>
+where
+    T: Serialize
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer
     {
         match self {
-            Hessian2List::TypedList(m_type, v_list) => {
+            List::TypedList(m_type, v_list) => {
                 todo!()
             },
-            Hessian2List::UntypedList(v_list) => {
+            List::UntypedList(v_list) => {
                 todo!()
             },
         }

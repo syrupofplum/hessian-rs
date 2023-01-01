@@ -6,7 +6,7 @@ use bytes::{BytesMut, BufMut, Bytes};
 use serde::ser::{SerializeSeq, SerializeStruct};
 use hessian_rs::ser::{Serializer, BytesBuf};
 use hessian_rs::error::{Error, Result};
-use hessian_rs::list::{get_primitive_type_str, Hessian2List};
+use hessian_rs::list::{get_primitive_type_str, List};
 use hessian_rs::value::Value;
 use hessian_rs::constants::PrimitiveType;
 
@@ -831,7 +831,8 @@ fn test_object_class_0_1() {
     }
     let v: Test = Test {};
 
-    let obj = hessian_rs::class::Hessian2Class::new("com.syrupofplum.hessian.Test", v);
+    let class = hessian_rs::class::Class::new("com.syrupofplum.hessian.Test", v);
+    let obj = Value::Object(class);
     let buf = hessian_rs::to_hessian2(&obj).unwrap();
 
     assert_eq!([0x43,0x1c,0x63,0x6f,0x6d,0x2e,0x73,0x79,0x72,0x75,0x70,0x6f,0x66,0x70,0x6c,0x75,0x6d,0x2e,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x90,0x60], buf.deref());

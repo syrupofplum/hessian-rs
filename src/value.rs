@@ -1,50 +1,51 @@
 use serde::ser::{Serialize};
 use serde::Serializer;
-use crate::binary::Hessian2Binary;
-use crate::list::Hessian2List;
-use crate::map::Hessian2Map;
+use crate::binary::Binary;
+use crate::class::Class;
+use crate::list::List;
+use crate::map::Map;
 use crate::error::Error;
 
-pub enum Value {
-    Binary(Hessian2Binary),
+pub enum Value<T> {
+    Binary(Binary),
     Boolean(bool),
     Date(i64),
     Double(f64),
     Int(i32),
-    List(Hessian2List),
+    List(List<T>),
     Long(i64),
-    Map(Hessian2Map),
+    Map(Map),
     Null,
-    Object,
+    Object(Class<T>),
     Ref,
     String(String),
     Type,
     TypeReferences,
 }
 
-impl Serialize for Value {
+impl<T> Serialize for Value<T>
+where
+    T: Serialize
+{
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer
     {
         match self {
-            Value::Binary(_) => {}
-            Value::Boolean(_) => {}
-            Value::Date(_) => {}
-            Value::Double(_) => {}
-            Value::Int(v) => {
-                return serializer.serialize_i32(*v);
-            },
-            Value::List(_) => {}
-            Value::Long(_) => {}
-            Value::Map(_) => {}
-            Value::Null => {}
-            Value::Object => {}
-            Value::Ref => {}
-            Value::String(_) => {}
-            Value::Type => {}
-            Value::TypeReferences => {}
+            Value::Binary(v) => {todo!()}
+            Value::Boolean(v) => serializer.serialize_bool(*v),
+            Value::Date(_) => {todo!()},
+            Value::Double(v) => serializer.serialize_f64(*v),
+            Value::Int(v) => serializer.serialize_i32(*v),
+            Value::List(v) => v.serialize(serializer),
+            Value::Long(v) => serializer.serialize_i64(*v),
+            Value::Map(v) => v.serialize(serializer),
+            Value::Null => serializer.serialize_none(),
+            Value::Object(v) => v.serialize(serializer),
+            Value::Ref => {todo!()}
+            Value::String(v) => serializer.serialize_str(v),
+            Value::Type => {todo!()}
+            Value::TypeReferences => {todo!()}
         }
-        return serializer.serialize_i32(0);
     }
 }

@@ -407,7 +407,7 @@ where
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok> where T: Serialize {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> Result<Self::Ok> {
@@ -449,7 +449,7 @@ where
     }
 
     fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple> {
-        todo!()
+        self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_struct(self, name: &'static str, len: usize) -> Result<Self::SerializeTupleStruct> {

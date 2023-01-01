@@ -2,21 +2,21 @@ use std::io;
 use serde::{Deserialize, Serialize, Serializer};
 use serde::ser::SerializeStruct;
 
-pub struct Hessian2Class<T> {
+pub struct Class<T> {
     class_path: &'static str,
     data: T
 }
 
-impl<T> Hessian2Class<T> {
+impl<T> Class<T> {
     pub fn new(class_path: &'static str, data: T) -> Self {
-        Hessian2Class {
+        Class {
             class_path,
             data,
         }
     }
 }
 
-impl<T> serde::Serialize for Hessian2Class<T>
+impl<T> serde::Serialize for Class<T>
 where
     T: Serialize
 {
