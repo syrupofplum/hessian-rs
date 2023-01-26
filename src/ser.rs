@@ -76,15 +76,51 @@ impl<W> SerializeElementInfo<W> {
 pub struct SerializeResult<'a, W> {
     ser: &'a mut Serializer<W>,
     state: State,
+}
+
+impl<'a, W> SerializeResult<'a, W> {
+    pub fn new(ser: &'a mut Serializer<W>, state: State) -> Self {
+        SerializeResult {
+            ser,
+            state,
+        }
+    }
+}
+
+pub struct SerializeTupleVariantResult<'a, W> {
+    ser: &'a mut Serializer<W>,
+    state: State,
+    name: &'a str,
+    variant_index: u32,
+    variant: &'a str,
+    len: usize
+}
+
+impl<'a, W> SerializeTupleVariantResult<'a, W> {
+    pub fn new(ser: &'a mut Serializer<W>, state: State, name: &'a str, variant_index: u32, variant: &'a str, len: usize) -> Self {
+        SerializeTupleVariantResult {
+            ser,
+            state,
+            name,
+            variant_index,
+            variant,
+            len,
+        }
+    }
+}
+
+pub struct SerializeStructResult<'a, W> {
+    ser: &'a mut Serializer<W>,
+    state: State,
     is_pack_type: bool,
     pack_buf: Option<BytesBufWriter>,
     key_buf_list: Option<Vec<BytesBufWriter>>,
     value_buf_list: Option<Vec<BytesBufWriter>>,
 }
 
-impl<'a, W> SerializeResult<'a, W> {
+impl<'a, W> SerializeStructResult<'a, W> {
     pub fn new(ser: &'a mut Serializer<W>, state: State) -> Self {
-        SerializeResult {
+        SerializeStructResult {
             ser,
             state,
             is_pack_type: false,
@@ -147,16 +183,22 @@ impl<'a, W> SerializeTupleStruct for SerializeResult<'a, W> {
     }
 }
 
-impl<'a, W> SerializeTupleVariant for SerializeResult<'a, W> {
+impl<'a, W> SerializeTupleVariant for SerializeTupleVariantResult<'a, W>
+where
+    W: io::Write
+{
     type Ok = ();
     type Error = Error;
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok> where T: Serialize {
-        todo!()
+        self.state = State::Rest;
+        let ref mut ref_ser = *self.ser;
+        value.serialize(ref_ser)?;
+        Ok(())
     }
 
     fn end(self) -> Result<Self::Ok> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -177,7 +219,7 @@ impl<'a, W> SerializeMap for SerializeResult<'a, W> {
     }
 }
 
-impl<'a, W> SerializeStruct for SerializeResult<'a, W>
+impl<'a, W> SerializeStruct for SerializeStructResult<'a, W>
 where
     W: io::Write
 {
@@ -293,9 +335,9 @@ where
     type SerializeSeq = SerializeResult<'a, W>;
     type SerializeTuple = SerializeResult<'a, W>;
     type SerializeTupleStruct = SerializeResult<'a, W>;
-    type SerializeTupleVariant = SerializeResult<'a, W>;
+    type SerializeTupleVariant = SerializeTupleVariantResult<'a, W>;
     type SerializeMap = SerializeResult<'a, W>;
-    type SerializeStruct = SerializeResult<'a, W>;
+    type SerializeStruct = SerializeStructResult<'a, W>;
     type SerializeStructVariant = SerializeResult<'a, W>;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok> {
@@ -457,7 +499,29 @@ where
     }
 
     fn serialize_tuple_variant(self, name: &'static str, variant_index: u32, variant: &'static str, len: usize) -> Result<Self::SerializeTupleVariant> {
-        todo!()
+        if usize::MAX == len {
+            let mut bytes_buf = BytesBuf::with_capacity(5);
+            if name == "TypedList" {
+                let v_len = variant_index as usize;
+                Formatter::format_typed_list_header(v_len, &mut bytes_buf)?;
+                self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+                return if v_len == 0 {
+                    Ok(SerializeTupleVariantResult::new(self, State::Empty, name, variant_index, variant, len))
+                } else {
+                    Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))
+                }
+            } else if name == "UntypedList" {
+                let v_len = variant_index as usize;
+                Formatter::format_untyped_list_header(v_len, &mut bytes_buf)?;
+                self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
+                return if v_len == 0 {
+                    Ok(SerializeTupleVariantResult::new(self, State::Empty, name, variant_index, variant, len))
+                } else {
+                    Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))
+                }
+            }
+        }
+        Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
@@ -470,7 +534,7 @@ where
             Formatter::format_object_class_header(name, &mut bytes_buf)?;
             self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error {})?;
         }
-        Ok(SerializeResult::new(self, State::First))
+        Ok(SerializeStructResult::new(self, State::First))
     }
 
     fn serialize_struct_variant(self, name: &'static str, variant_index: u32, variant: &'static str, len: usize) -> Result<Self::SerializeStructVariant> {
