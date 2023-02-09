@@ -11,9 +11,7 @@ pub mod list;
 pub mod map;
 pub mod class;
 
-pub fn to_hessian2<T>(obj: &value::Value<T>) -> error::Result<Vec<u8>>
-where
-    T: Serialize
+pub fn to_hessian2(obj: &value::Value) -> error::Result<Vec<u8>>
 {
     let mut writer = Vec::with_capacity(128);
     let mut ser = Serializer::new(&mut writer);

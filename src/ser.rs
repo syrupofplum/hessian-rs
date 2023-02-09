@@ -501,24 +501,18 @@ where
     fn serialize_tuple_variant(self, name: &'static str, variant_index: u32, variant: &'static str, len: usize) -> Result<Self::SerializeTupleVariant> {
         if usize::MAX == len {
             let mut bytes_buf = BytesBuf::with_capacity(5);
+            let v_len = variant_index as usize;
             if name == "TypedList" {
-                let v_len = variant_index as usize;
                 Formatter::format_typed_list_header(v_len, &mut bytes_buf)?;
                 self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
-                return if v_len == 0 {
-                    Ok(SerializeTupleVariantResult::new(self, State::Empty, name, variant_index, variant, len))
-                } else {
-                    Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))
-                }
             } else if name == "UntypedList" {
-                let v_len = variant_index as usize;
                 Formatter::format_untyped_list_header(v_len, &mut bytes_buf)?;
                 self.writer.write_all(bytes_buf.freeze().deref()).map_err(|_| Error{})?;
-                return if v_len == 0 {
-                    Ok(SerializeTupleVariantResult::new(self, State::Empty, name, variant_index, variant, len))
-                } else {
-                    Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))
-                }
+            }
+            return if v_len == 0 {
+                Ok(SerializeTupleVariantResult::new(self, State::Empty, name, variant_index, variant, len))
+            } else {
+                Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))
             }
         }
         Ok(SerializeTupleVariantResult::new(self, State::First, name, variant_index, variant, len))

@@ -46,13 +46,10 @@ impl Write for BytesBufWriter {
 
 #[test]
 fn test_bool_false() {
-    const V: bool = false;
+    let value = Value::Boolean(false);
+    let buf = hessian_rs::to_hessian2(&value).unwrap();
 
-    let mut buf = BytesBufWriter::new();
-    let mut ser = Serializer::new(&mut buf);
-    ser.serialize_bool(V).unwrap();
-
-    assert_eq!([0x46], buf.get().unwrap().deref());
+    assert_eq!([0x46], buf.deref());
 }
 
 #[test]
@@ -809,31 +806,15 @@ fn test_typed_list_int_1_1() {
 }
 
 #[test]
-fn test_object_class_manual_1() {
-    struct Test {
-        v: i32
-    }
-    let v: Test = Test {v: 1};
-
-    let mut buf = BytesBufWriter::new();
-    let mut ser = Serializer::new(&mut buf);
-    let mut obj = ser.serialize_struct("com.syrupofplum.hessian.Test", usize::MAX).unwrap();
-    obj.serialize_field("v", &1).unwrap();
-    SerializeStruct::end(obj).unwrap();
-
-    assert_eq!([0x43,0x1c,0x63,0x6f,0x6d,0x2e,0x73,0x79,0x72,0x75,0x70,0x6f,0x66,0x70,0x6c,0x75,0x6d,0x2e,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x91,0x1,0x76,0x60,0x91], buf.get().unwrap().deref());
-}
-
-#[test]
 fn test_object_class_0_1() {
     #[derive(serde::Serialize)]
     struct Test {
     }
     let v: Test = Test {};
 
-    let class = hessian_rs::class::Class::new("com.syrupofplum.hessian.Test", v);
-    let obj = Value::Object(class);
-    let buf = hessian_rs::to_hessian2(&obj).unwrap();
+    let class = hessian_rs::class::Class::new("hessian.Test", v);
+    let value = Value::Object(class);
+    let buf = hessian_rs::to_hessian2(&value).unwrap();
 
-    assert_eq!([0x43,0x1c,0x63,0x6f,0x6d,0x2e,0x73,0x79,0x72,0x75,0x70,0x6f,0x66,0x70,0x6c,0x75,0x6d,0x2e,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x90,0x60], buf.deref());
+    assert_eq!([0x43,0xc,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x90,0x60], buf.deref());
 }

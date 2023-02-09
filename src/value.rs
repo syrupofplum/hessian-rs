@@ -6,26 +6,24 @@ use crate::list::List;
 use crate::map::Map;
 use crate::error::Error;
 
-pub enum Value<T> {
+pub enum Value {
     Binary(Binary),
     Boolean(bool),
     Date(i64),
     Double(f64),
     Int(i32),
-    List(List<T>),
+    List(List),
     Long(i64),
     Map(Map),
     Null,
-    Object(Class<T>),
+    Object(Class),
     Ref,
     String(String),
     Type,
     TypeReferences,
 }
 
-impl<T> Serialize for Value<T>
-where
-    T: Serialize
+impl Serialize for Value
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

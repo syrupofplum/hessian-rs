@@ -9,9 +9,9 @@ pub enum TypedListType {
     CustomType(&'static str)
 }
 
-pub enum List<T> {
-    TypedList(TypedListType, Vec<Value<T>>),
-    UntypedList(Vec<Value<T>>),
+pub enum List {
+    TypedList(TypedListType, Vec<Value>),
+    UntypedList(Vec<Value>),
 }
 
 pub fn get_primitive_type_str(primitive_type: &PrimitiveType) -> &'static str {
@@ -28,9 +28,21 @@ pub fn get_primitive_type_str(primitive_type: &PrimitiveType) -> &'static str {
     }
 }
 
-impl<T> Serialize for List<T>
-where
-    T: Serialize
+impl List {
+    fn get_typed_list_type(m_type: &TypedListType) -> TypedListType {
+        let mut typed_list_type = m_type.clone();
+        typed_list_type
+    }
+
+    fn get_seq_type(typed_list_type: TypedListType) -> &'static str {
+        match typed_list_type {
+            TypedListType::PrimitiveType(primitive_type) => get_primitive_type_str(&primitive_type),
+            TypedListType::CustomType(custom_type) => custom_type,
+        }
+    }
+}
+
+impl Serialize for List
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -38,21 +50,16 @@ where
     {
         match self {
             List::TypedList(m_type, v_list) => {
-                let mut typed_list_type = m_type.clone();
-                let type_name = std::any::type_name::<T>();
-                if let Some(primitive_type) = PRIMITIVE_TYPE_MAP.get(type_name) {
-                    typed_list_type = TypedListType::PrimitiveType(primitive_type.clone());
-                }
-                let seq_type = match typed_list_type {
-                    TypedListType::PrimitiveType(primitive_type) => get_primitive_type_str(&primitive_type),
-                    TypedListType::CustomType(custom_type) => custom_type,
-                };
+                let typed_list_type = List::get_typed_list_type(m_type);
+                let seq_type = List::get_seq_type(typed_list_type);
                 let mut tv = serializer.serialize_tuple_variant("TypedList", v_list.len() as u32, seq_type, usize::MAX)?;
                 tv.serialize_field(v_list)?;
                 tv.end()
             },
             List::UntypedList(v_list) => {
-                todo!()
+                let mut tv = serializer.serialize_tuple_variant("UntypedList", v_list.len() as u32, "", usize::MAX)?;
+                tv.serialize_field(v_list)?;
+                tv.end()
             },
         }
 
