@@ -7,7 +7,7 @@ use serde::ser::{SerializeSeq, SerializeStruct};
 use hessian_rs::ser::{Serializer, BytesBuf};
 use hessian_rs::error::{Error, Result};
 use hessian_rs::list::{get_primitive_type_str, List};
-use hessian_rs::value::Value;
+use hessian_rs::value::{Value, CustomValue};
 use hessian_rs::constants::PrimitiveType;
 
 struct BytesBufWriter {
@@ -812,9 +812,9 @@ fn test_object_class_0_1() {
     }
     let v: Test = Test {};
 
-    let class = hessian_rs::class::Class::new("hessian.Test", v);
-    let value = Value::Object(class);
-    let buf = hessian_rs::to_hessian2(&value).unwrap();
+    let class = hessian_rs::class::Class::<Test>::new("hessian.Test", v);
+    let value = CustomValue::Object(class);
+    let buf = hessian_rs::to_hessian2_custom(&value).unwrap();
 
     assert_eq!([0x43,0xc,0x68,0x65,0x73,0x73,0x69,0x61,0x6e,0x2e,0x54,0x65,0x73,0x74,0x90,0x60], buf.deref());
 }

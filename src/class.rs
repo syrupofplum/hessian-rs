@@ -2,13 +2,13 @@ use std::io;
 use serde::{Deserialize, Serialize, Serializer};
 use serde::ser::SerializeStruct;
 
-pub struct Class {
+pub struct Class<T> {
     class_path: &'static str,
-    data: Box<dyn Serialize>
+    data: T
 }
 
-impl Class {
-    pub fn new(class_path: &'static str, data: Box<dyn Serialize>) -> Self {
+impl<T> Class<T> {
+    pub fn new(class_path: &'static str, data: T) -> Self {
         Class {
             class_path,
             data,
@@ -16,7 +16,9 @@ impl Class {
     }
 }
 
-impl serde::Serialize for Class
+impl<T> serde::Serialize for Class<T>
+where
+    T: Serialize
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
         let mut s = serializer.serialize_struct(self.class_path, usize::MAX)?;

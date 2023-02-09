@@ -18,3 +18,12 @@ pub fn to_hessian2(obj: &value::Value) -> error::Result<Vec<u8>>
     obj.serialize(&mut ser)?;
     Ok(writer)
 }
+
+pub fn to_hessian2_custom<T>(obj: &value::CustomValue<T>) -> error::Result<Vec<u8>>
+{
+    let mut writer = Vec::with_capacity(128);
+    let mut ser = Serializer::new(&mut writer);
+    obj.serialize(&mut ser)?;
+    Ok(writer)
+}
+

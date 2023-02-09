@@ -16,7 +16,6 @@ pub enum Value {
     Long(i64),
     Map(Map),
     Null,
-    Object(Class),
     Ref,
     String(String),
     Type,
@@ -39,11 +38,28 @@ impl Serialize for Value
             Value::Long(v) => serializer.serialize_i64(*v),
             Value::Map(v) => v.serialize(serializer),
             Value::Null => serializer.serialize_none(),
-            Value::Object(v) => v.serialize(serializer),
             Value::Ref => {todo!()}
             Value::String(v) => serializer.serialize_str(v),
             Value::Type => {todo!()}
             Value::TypeReferences => {todo!()}
+        }
+    }
+}
+
+pub enum CustomValue<T> {
+    Object(Class<T>),
+}
+
+impl<T> Serialize for CustomValue<T>
+where
+    T: Serialize
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        match self {
+            CustomValue::Object(v) => v.serialize(serializer),
         }
     }
 }
