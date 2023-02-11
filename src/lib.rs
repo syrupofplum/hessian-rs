@@ -20,6 +20,8 @@ pub fn to_hessian2(obj: &value::Value) -> error::Result<Vec<u8>>
 }
 
 pub fn to_hessian2_custom<T>(obj: &value::CustomValue<T>) -> error::Result<Vec<u8>>
+where
+    T: Serialize
 {
     let mut writer = Vec::with_capacity(128);
     let mut ser = Serializer::new(&mut writer);
