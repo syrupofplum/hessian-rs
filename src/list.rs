@@ -1,12 +1,12 @@
-use serde::{Serialize, Serializer};
+use crate::constants::{PrimitiveType, PRIMITIVE_TYPE_MAP};
+use crate::value::Value;
 use serde::ser::{SerializeSeq, SerializeTupleVariant};
-use crate::constants::{PRIMITIVE_TYPE_MAP, PrimitiveType};
-use crate::value::{CustomValue, Value};
+use serde::{Serialize, Serializer};
 
 #[derive(Clone)]
 pub enum TypedListType {
     PrimitiveType(PrimitiveType),
-    CustomType(&'static str)
+    CustomType(&'static str),
 }
 
 pub enum List {
@@ -25,7 +25,7 @@ pub fn get_primitive_type_str(primitive_type: &PrimitiveType) -> &'static str {
         PrimitiveType::Boolean => "[boolean",
         PrimitiveType::Char => "[char",
         PrimitiveType::String => "[string",
-    }
+    };
 }
 
 impl List {
@@ -45,52 +45,31 @@ impl List {
 impl Serialize for List {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer
+        S: Serializer,
     {
         match self {
             List::TypedList(m_type, v_list) => {
                 let typed_list_type = List::get_typed_list_type(m_type);
                 let seq_type = List::get_seq_type(typed_list_type);
-                let mut tv = serializer.serialize_tuple_variant("TypedList", v_list.len() as u32, seq_type, usize::MAX)?;
+                let mut tv = serializer.serialize_tuple_variant(
+                    "TypedList",
+                    v_list.len() as u32,
+                    seq_type,
+                    usize::MAX,
+                )?;
                 tv.serialize_field(v_list)?;
                 tv.end()
-            },
+            }
             List::UntypedList(v_list) => {
-                let mut tv = serializer.serialize_tuple_variant("UntypedList", v_list.len() as u32, "", usize::MAX)?;
+                let mut tv = serializer.serialize_tuple_variant(
+                    "UntypedList",
+                    v_list.len() as u32,
+                    "",
+                    usize::MAX,
+                )?;
                 tv.serialize_field(v_list)?;
                 tv.end()
-            },
-        }
-
-    }
-}
-
-pub enum CustomList<T> {
-    TypedList(TypedListType, Vec<CustomValue<T>>),
-    UntypedList(Vec<CustomValue<T>>),
-}
-
-impl<T> Serialize for CustomList<T>
-where
-    T: Serialize
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer
-    {
-        match self {
-            CustomList::TypedList(m_type, v_list) => {
-                let typed_list_type = List::get_typed_list_type(m_type);
-                let seq_type = List::get_seq_type(typed_list_type);
-                let mut tv = serializer.serialize_tuple_variant("TypedList", v_list.len() as u32, seq_type, usize::MAX)?;
-                tv.serialize_field(v_list)?;
-                tv.end()
-            },
-            CustomList::UntypedList(v_list) => {
-                let mut tv = serializer.serialize_tuple_variant("UntypedList", v_list.len() as u32, "", usize::MAX)?;
-                tv.serialize_field(v_list)?;
-                tv.end()
-            },
+            }
         }
     }
 }
