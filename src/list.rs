@@ -1,6 +1,6 @@
-use crate::constants::{PrimitiveType, PRIMITIVE_TYPE_MAP};
+use crate::constants::PrimitiveType;
 use crate::value::Value;
-use serde::ser::{SerializeSeq, SerializeTupleVariant};
+use serde::ser::SerializeTupleVariant;
 use serde::{Serialize, Serializer};
 
 #[derive(Clone)]

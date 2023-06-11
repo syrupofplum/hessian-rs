@@ -1,6 +1,5 @@
 use crate::binary::Binary;
 use crate::class::Class;
-use crate::error::Error;
 use crate::list::List;
 use crate::map::Map;
 use serde::ser::Serialize;
@@ -32,7 +31,7 @@ where
         S: Serializer,
     {
         match self {
-            Value::Binary(v) => {
+            Value::Binary(_v) => {
                 todo!()
             }
             Value::Boolean(v) => serializer.serialize_bool(*v),

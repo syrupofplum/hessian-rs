@@ -1,10 +1,10 @@
-use bytes::{BufMut, Bytes, BytesMut};
-use hessian_rs::constants::PrimitiveType;
+use bytes::{BufMut, Bytes};
+
 use hessian_rs::error::{Error, Result};
-use hessian_rs::list::{get_primitive_type_str, List};
+
 use hessian_rs::ser::{BytesBuf, Serializer};
 use hessian_rs::value::Value;
-use serde::ser::{SerializeSeq, SerializeStruct};
+use serde::ser::SerializeSeq;
 use serde::Serializer as OtherSerializer;
 use std::io;
 use std::io::Write;
@@ -46,8 +46,8 @@ impl Write for BytesBufWriter {
 
 #[test]
 fn test_bool_false() {
-    let value = Value::Boolean(false);
-    let buf = hessian_rs::to_hessian2::<()>(&value).unwrap();
+    let value: Value = Value::Boolean(false);
+    let buf = hessian_rs::to_hessian2(&value).unwrap();
 
     assert_eq!([0x46], buf.deref());
 }

@@ -1,6 +1,5 @@
 use crate::ser::Serializer;
-use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer as OtherSerializer};
+use serde::Serialize;
 
 pub mod binary;
 pub mod class;

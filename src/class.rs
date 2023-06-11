@@ -1,6 +1,5 @@
 use serde::ser::SerializeStruct;
-use serde::{Deserialize, Serialize, Serializer};
-use std::io;
+use serde::{Serialize, Serializer};
 
 pub struct Class<T> {
     class_path: &'static str,

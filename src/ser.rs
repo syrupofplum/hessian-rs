@@ -8,16 +8,23 @@ use std::io;
 use std::io::Write;
 use std::ops::Deref;
 
-use crate::constants::{PrimitiveType, BINARY_CHUNK_SIZE, PRIMITIVE_TYPE_MAP, STRING_CHUNK_SIZE};
+use crate::constants::{BINARY_CHUNK_SIZE, PRIMITIVE_TYPE_MAP, STRING_CHUNK_SIZE};
 use crate::error::{Error, Result};
 use crate::list::get_primitive_type_str;
 
+#[allow(dead_code)]
 const I32_MAX_U32: u32 = i32::MAX as u32;
+#[allow(dead_code)]
 const I32_MIN_I64: i64 = i32::MIN as i64;
+#[allow(dead_code)]
 const I32_MAX_I64: i64 = i32::MAX as i64;
+#[allow(dead_code)]
 const I32_MAX_U64: u64 = i32::MAX as u64;
+#[allow(dead_code)]
 const I64_MAX_U64: u64 = i64::MAX as u64;
+#[allow(dead_code)]
 const F32_MIN_F64: f64 = f32::MIN as f64;
+#[allow(dead_code)]
 const F32_MAX_F64: f64 = f32::MAX as f64;
 
 pub type BytesBuf = BytesMut;
@@ -64,6 +71,7 @@ pub enum State {
     Rest,
 }
 
+#[allow(dead_code)]
 pub struct SerializeElementInfo<W> {
     ser: Serializer<W>,
 }
@@ -85,6 +93,7 @@ impl<'a, W> SerializeResult<'a, W> {
     }
 }
 
+#[allow(dead_code)]
 pub struct SerializeTupleVariantResult<'a, W> {
     ser: &'a mut Serializer<W>,
     state: State,
@@ -169,7 +178,7 @@ impl<'a, W> SerializeTuple for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok>
+    fn serialize_element<T: ?Sized>(&mut self, _value: &T) -> Result<Self::Ok>
     where
         T: Serialize,
     {
@@ -185,7 +194,7 @@ impl<'a, W> SerializeTupleStruct for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok>
+    fn serialize_field<T: ?Sized>(&mut self, _value: &T) -> Result<Self::Ok>
     where
         T: Serialize,
     {
@@ -223,14 +232,14 @@ impl<'a, W> SerializeMap for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_key<T: ?Sized>(&mut self, key: &T) -> Result<Self::Ok>
+    fn serialize_key<T: ?Sized>(&mut self, _key: &T) -> Result<Self::Ok>
     where
         T: Serialize,
     {
         todo!()
     }
 
-    fn serialize_value<T: ?Sized>(&mut self, value: &T) -> Result<Self::Ok>
+    fn serialize_value<T: ?Sized>(&mut self, _value: &T) -> Result<Self::Ok>
     where
         T: Serialize,
     {
@@ -320,7 +329,7 @@ impl<'a, W> SerializeStructVariant for SerializeResult<'a, W> {
     type Ok = ();
     type Error = Error;
 
-    fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<Self::Ok>
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, _value: &T) -> Result<Self::Ok>
     where
         T: Serialize,
     {
@@ -498,20 +507,24 @@ where
         todo!()
     }
 
-    fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok> {
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok> {
         todo!()
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
     ) -> Result<Self::Ok> {
         todo!()
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(self, name: &'static str, value: &T) -> Result<Self::Ok>
+    fn serialize_newtype_struct<T: ?Sized>(
+        self,
+        _name: &'static str,
+        _value: &T,
+    ) -> Result<Self::Ok>
     where
         T: Serialize,
     {
@@ -520,10 +533,10 @@ where
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        value: &T,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
     ) -> Result<Self::Ok>
     where
         T: Serialize,
@@ -557,8 +570,8 @@ where
 
     fn serialize_tuple_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _name: &'static str,
+        _len: usize,
     ) -> Result<Self::SerializeTupleStruct> {
         todo!()
     }
@@ -614,7 +627,7 @@ where
         ))
     }
 
-    fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap> {
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
         todo!()
     }
 
@@ -631,10 +644,10 @@ where
 
     fn serialize_struct_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
     ) -> Result<Self::SerializeStructVariant> {
         todo!()
     }
